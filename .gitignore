@@ -1,14 +1,28 @@
+# Dependencias
 node_modules/
 __pycache__/
 *.py[cod]
 .venv/
+backend-fastapi/venv
 env/
+
+# Variables de entorno y secretos
 .env
 .env.local
+*.pem
+
+# Compilados y Builds
 dist/
 build/
+.cache/
+
+# Base de datos local
 mongo_data/
 *.log
-.DS_Store
+
+# Editores y Sistema Operativo
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
+EOF
