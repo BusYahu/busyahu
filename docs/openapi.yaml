@@ -1,0 +1,2060 @@
+# =============================================================================
+# BUSYAHU - CONTRATO REST FORMAL (OpenAPI 3.0 / Swagger)
+# -----------------------------------------------------------------------------
+# Objetivo: definir de forma estricta los 12 endpoints REST del sistema para
+# garantizar PARIDAD TOTAL entre Backend Express (Node.js + TypeScript) y
+# Backend FastAPI (Python). Ambos backends DEBEN responder con idénticas
+# firmas JSON y códigos HTTP a lo aquí especificado.
+#
+# Módulos: Auth (3), Rutas (2), Asientos (2), Reservas (4), Admin (1).
+# Códigos de estado cubiertos: 200, 201, 400, 401, 403, 404 y 500.
+#
+# Autenticación: Bearer token JWT (securityScheme 'bearerAuth'). Los endpoints
+# públicos (register, login, búsqueda de rutas y mapa de asientos) declaran
+# security: []. El resto requiere token; /api/admin/reportes exige rol 'admin'.
+# =============================================================================
+openapi: 3.0.3
+
+info:
+  title: BusYahu API - Contrato REST de Paridad
+  version: 1.0.0
+  description: |
+    Especificación oficial de la API REST de BusYahu (plataforma global de
+    reserva de pasajes en 11 redes de transporte internacional).
+
+    Convenciones estrictas del contrato:
+
+    * **Paridad**: los backends `express` (puerto 4000) y `fastapi`
+      (puerto 8000) deben implementar EXACTAMENTE estas rutas, con las mismas
+      propiedades JSON, tipos, enums y códigos HTTP. No se permiten campos
+      adicionales ni omitidos.
+    * **Identificadores**: `id`, `rutaId`, `asientoId` y `reservaId` son
+      ObjectIds de MongoDB de 24 caracteres hexadecimales.
+    * **Errores**: todos los errores (400, 401, 403, 404, 500) usan el
+      envoltorio `ErrorResponse` de forma idéntica en ambos backends.
+    * **Autenticación**: excepto los endpoints marcados como públicos, toda
+      petición debe incluir el header `Authorization: Bearer <token>`.
+      `/api/admin/reportes` además exige el rol `admin`.
+    * **Moneda**: cada ruta expresa su moneda y símbolo según el país destino
+      (EUR €, GBP £, USD $, CAD CA$, RUB ₽, CNY ¥, INR ₹, JPY ¥).
+    * **Asientos**: la clase (`classType`) es `First` o `Standard`, y el estado
+      (`status`) es `available` u `occupied`.
+    * **Reservas**: el estado (`status`) de una reserva es `CONFIRMED` o
+      `CANCELLED`. Al cancelar una reserva se liberan los asientos asociados.
+  contact:
+    name: Equipo BusYahu
+  license:
+    name: Uso académico - Programación 3 (ETec)
+    url: https://github.com/BusYahu/busyahu
+  x-parity-requirement: >
+    Los 12 endpoints DEBEN existir y responder de forma idéntica en ambos
+    backends. Contrato fuente de verdad: docs/openapi.yaml.
+
+servers:
+  - url: https://api-express.busyahu.dev
+    description: Backend Express (Node.js + TypeScript) - Producción
+  - url: https://api-fastapi.busyahu.dev
+    description: Backend FastAPI (Python) - Producción
+
+tags:
+  - name: Auth
+    description: Registro, autenticación y perfil de usuarios (JWT).
+  - name: Rutas
+    description: Búsqueda y consulta de rutas / viajes disponibles.
+  - name: Asientos
+    description: Mapa de asientos por unidad y ocupación de asientos.
+  - name: Reservas
+    description: Creación, consulta y cancelación de reservas (ticket QR).
+  - name: Admin
+    description: Reportes estadísticos exclusivos para el rol admin.
+
+paths:
+  /api/auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Registrar un nuevo pasajero
+      description: >
+        Crea una cuenta de pasajero (rol `user`). Los administradores solo se
+        crean por seed. El password se almacena hasheado con bcrypt y nunca se
+        expone en las respuestas. Público, no requiere token.
+      operationId: authRegister
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              name: 'María López'
+              email: 'maria.lopez@example.com'
+              password: 'Segura123!'
+      responses:
+        '201':
+          description: Usuario creado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: '64a1e2d3c4b5a6f7e8d9c0b1'
+                name: 'María López'
+                email: 'maria.lopez@example.com'
+                role: user
+                createdAt: '2026-08-20T10:00:00.000Z'
+        '400':
+          description: Cuerpo inválido o email ya registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 400
+                error: 'Bad Request'
+                message: 'El email maria.lopez@example.com ya se encuentra registrado'
+                path: '/api/auth/register'
+                timestamp: '2026-08-27T14:00:01.000Z'
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                error: 'Internal Server Error'
+                message: 'No se pudo registrar el usuario'
+                path: '/api/auth/register'
+                timestamp: '2026-08-27T14:00:02.000Z'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Iniciar sesión y obtener token JWT
+      description: >
+        Valida las credenciales (email + password) y devuelve un token Bearer
+        JWT con las credenciales del usuario y su tiempo de expiración en
+        segundos. Público, no requiere token.
+      operationId: authLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: 'pasajero@busyahu.com'
+              password: 'Pasajero123!'
+      responses:
+        '200':
+          description: Autenticación exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                token: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2NGExZTJkM2M0YjVhNmY3ZThkOWMwYjEiLCJyb2xlIjoidXNlciJ9.signature_ejemplo'
+                tokenType: Bearer
+                expiresIn: 86400
+                user:
+                  id: '64a1e2d3c4b5a6f7e8d9c0b1'
+                  name: 'Pasajero Demo'
+                  email: 'pasajero@busyahu.com'
+                  role: user
+                  createdAt: '2026-08-20T10:05:00.000Z'
+        '400':
+          description: Cuerpo inválido (campos faltantes o formato incorrecto).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 400
+                error: 'Bad Request'
+                message: 'El campo email es obligatorio'
+                path: '/api/auth/login'
+                timestamp: '2026-08-27T14:01:00.000Z'
+        '401':
+          description: Credenciales incorrectas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                error: 'Unauthorized'
+                message: 'Credenciales inválidas'
+                path: '/api/auth/login'
+                timestamp: '2026-08-27T14:01:05.000Z'
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                error: 'Internal Server Error'
+                message: 'No se pudo procesar la autenticación'
+                path: '/api/auth/login'
+                timestamp: '2026-08-27T14:01:06.000Z'
+
+  /api/auth/me:
+    get:
+      tags:
+        - Auth
+      summary: Obtener el perfil del usuario autenticado
+      description: >
+        Devuelve el perfil del usuario dueño del token. Requiere header
+        `Authorization: Bearer <token>`.
+      operationId: authMe
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil del usuario autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: '64a1e2d3c4b5a6f7e8d9c0b1'
+                name: 'Pasajero Demo'
+                email: 'pasajero@busyahu.com'
+                role: user
+                createdAt: '2026-08-20T10:05:00.000Z'
+        '401':
+          description: Token ausente, inválido o expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                error: 'Unauthorized'
+                message: 'Token inválido o expirado'
+                path: '/api/auth/me'
+                timestamp: '2026-08-27T14:02:00.000Z'
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                error: 'Internal Server Error'
+                message: 'No se pudo obtener el perfil'
+                path: '/api/auth/me'
+                timestamp: '2026-08-27T14:02:01.000Z'
+
+  /api/rutas:
+    get:
+      tags:
+        - Rutas
+      summary: Buscar rutas / viajes disponibles
+      description: >
+        Devuelve las rutas que coinciden con los filtros enviados. Al menos se
+        recomienda enviar `originStationId` y `destinationStationId`; `date`
+        filtra por fecha de salida. Público, no requiere token.
+      operationId: rutasSearch
+      security: []
+      parameters:
+        - name: countryCode
+          in: query
+          required: false
+          description: 'Código de país ISO 3166-1 alpha-2 (ej: ES, FR, JP).'
+          schema:
+            type: string
+            pattern: '^[A-Z]{2}$'
+          example: 'ES'
+        - name: originStationId
+          in: query
+          required: false
+          description: 'ID de la estación de origen (ej: ES-MAD).'
+          schema:
+            type: string
+          example: 'ES-MAD'
+        - name: destinationStationId
+          in: query
+          required: false
+          description: 'ID de la estación de destino (ej: ES-BCN).'
+          schema:
+            type: string
+          example: 'ES-BCN'
+        - name: date
+          in: query
+          required: false
+          description: 'Fecha de salida en formato AAAA-MM-DD.'
+          schema:
+            type: string
+            format: date
+          example: '2026-09-01'
+        - name: page
+          in: query
+          required: false
+          description: 'Número de página (desde 1).'
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          required: false
+          description: 'Cantidad de resultados por página (1-100).'
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Lista de rutas encontradas y metadatos de paginación.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RutasResponse'
+              example:
+                data:
+                  - id: '64e2a1b2c3d4e5f6a7b8c9d0'
+                    train:
+                      code: 'AVE-103'
+                      name: 'Renfe S-103 Velaro'
+                      type: 'Alta Velocidad'
+                      countryCode: 'ES'
+                    origin:
+                      id: 'ES-MAD'
+                      name: 'Madrid Puerta de Atocha'
+                      city: 'Madrid'
+                      countryCode: 'ES'
+                    destination:
+                      id: 'ES-BCN'
+                      name: 'Barcelona Sants'
+                      city: 'Barcelona'
+                      countryCode: 'ES'
+                    departureAt: '2026-09-01T08:00:00Z'
+                    arrivalAt: '2026-09-01T10:30:00Z'
+                    durationMinutes: 150
+                    basePrice: 65.50
+                    currency: 'EUR'
+                    symbol: '€'
+                    availableSeats: 54
+                    totalSeats: 100
+                    classes:
+                      - classType: First
+                        price: 120.00
+                        availableSeats: 14
+                      - classType: Standard
+                        price: 65.50
+                        availableSeats: 40
+                total: 1
+                page: 1
+                limit: 20
+        '400':
+          description: Parámetros de búsqueda inválidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 400
+                error: 'Bad Request'
+                message: 'El parámetro date debe tener formato AAAA-MM-DD'
+                path: '/api/rutas'
+                timestamp: '2026-08-27T14:03:00.000Z'
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                error: 'Internal Server Error'
+                message: 'No se pudieron obtener las rutas'
+                path: '/api/rutas'
+                timestamp: '2026-08-27T14:03:01.000Z'
+
+  /api/rutas/{rutaId}:
+    get:
+      tags:
+        - Rutas
+      summary: Obtener detalle de una ruta
+      description: >
+        Devuelve el detalle completo de una ruta: tren, estaciones de origen y
+        destino, horarios, precios y disponibilidad. Público, no requiere
+        token.
+      operationId: rutaDetail
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RutaIdParam'
+      responses:
+        '200':
+          description: Detalle de la ruta solicitada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ruta'
+              example:
+                id: '64e2a1b2c3d4e5f6a7b8c9d0'
+                train:
+                  code: 'AVE-103'
+                  name: 'Renfe S-103 Velaro'
+                  type: 'Alta Velocidad'
+                  countryCode: 'ES'
+                origin:
+                  id: 'ES-MAD'
+                  name: 'Madrid Puerta de Atocha'
+                  city: 'Madrid'
+                  countryCode: 'ES'
+                destination:
+                  id: 'ES-BCN'
+                  name: 'Barcelona Sants'
+                  city: 'Barcelona'
+                  countryCode: 'ES'
+                departureAt: '2026-09-01T08:00:00Z'
+                arrivalAt: '2026-09-01T10:30:00Z'
+                durationMinutes: 150
+                basePrice: 65.50
+                currency: 'EUR'
+                symbol: '€'
+                availableSeats: 54
+                totalSeats: 100
+                classes:
+                  - classType: First
+                    price: 120.00
+                    availableSeats: 14
+                  - classType: Standard
+                    price: 65.50
+                    availableSeats: 40
+        '400':
+          description: 'rutaId no es un ObjectId válido.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 400
+                error: 'Bad Request'
+                message: 'El rutaId no tiene un formato de ObjectId válido'
+                path: '/api/rutas/xyz'
+                timestamp: '2026-08-27T14:04:00.000Z'
+        '404':
+          description: La ruta no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 404
+                error: 'Not Found'
+                message: 'La ruta 64e2a1b2c3d4e5f6a7b8c9d0 no fue encontrada'
+                path: '/api/rutas/64e2a1b2c3d4e5f6a7b8c9d0'
+                timestamp: '2026-08-27T14:04:05.000Z'
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                error: 'Internal Server Error'
+                message: 'No se pudo obtener la ruta'
+                path: '/api/rutas/64e2a1b2c3d4e5f6a7b8c9d0'
+                timestamp: '2026-08-27T14:04:06.000Z'
+
+  /api/rutas/{rutaId}/asientos:
+    get:
+      tags:
+        - Asientos
+      summary: Obtener el mapa de asientos de una ruta
+      description: >
+        Devuelve el mapa interactivo de asientos de la unidad: vagones, clase,
+        disposición (filas y asientos por fila) y el estado de cada asiento
+        (`available` u `occupied`). Público, no requiere token.
+      operationId: asientosMap
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RutaIdParam'
+      responses:
+        '200':
+          description: Mapa de asientos de la ruta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeatMap'
+              example:
+                rutaId: '64e2a1b2c3d4e5f6a7b8c9d0'
+                train:
+                  code: 'AVE-103'
+                  name: 'Renfe S-103 Velaro'
+                  type: 'Alta Velocidad'
+                  countryCode: 'ES'
+                totalSeats: 100
+                availableSeats: 54
+                carriages:
+                  - carriageNumber: 1
+                    classType: First
+                    rows: 5
+                    seatsPerRow: 4
+                    seats:
+                      - id: '5f2a1b3c4d5e6f7a8b9c0d01'
+                        carriageNumber: 1
+                        classType: First
+                        row: 1
+                        seatNumber: 'A1'
+                        status: available
+                        price: 120.00
+                      - id: '5f2a1b3c4d5e6f7a8b9c0d02'
+                        carriageNumber: 1
+                        classType: First
+                        row: 1
+                        seatNumber: 'B1'
+                        status: available
+                        price: 120.00
+                      - id: '5f2a1b3c4d5e6f7a8b9c0d03'
+                        carriageNumber: 1
+                        classType: First
+                        row: 1
+                        seatNumber: 'C1'
+                        status: occupied
+                        price: 120.00
+                      - id: '5f2a1b3c4d5e6f7a8b9c0d04'
+                        carriageNumber: 1
+                        classType: First
+                        row: 1
+                        seatNumber: 'D1'
+                        status: available
+                        price: 120.00
+                  - carriageNumber: 2
+                    classType: Standard
+                    rows: 10
+                    seatsPerRow: 4
+                    seats:
+                      - id: '5f2a1b3c4d5e6f7a8b9c0d2e'
+                        carriageNumber: 2
+                        classType: Standard
+                        row: 4
+                        seatNumber: 'A4'
+                        status: available
+                        price: 65.50
+                      - id: '5f2a1b3c4d5e6f7a8b9c0d2f'
+                        carriageNumber: 2
+                        classType: Standard
+                        row: 4
+                        seatNumber: 'A5'
+                        status: available
+                        price: 65.50
+                      - id: '5f2a1b3c4d5e6f7a8b9c0d30'
+                        carriageNumber: 2
+                        classType: Standard
+                        row: 5
+                        seatNumber: 'B5'
+                        status: occupied
+                        price: 65.50
+                      - id: '5f2a1b3c4d5e6f7a8b9c0d31'
+                        carriageNumber: 2
+                        classType: Standard
+                        row: 5
+                        seatNumber: 'C5'
+                        status: available
+                        price: 65.50
+        '400':
+          description: 'rutaId no es un ObjectId válido.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 400
+                error: 'Bad Request'
+                message: 'El rutaId no tiene un formato de ObjectId válido'
+                path: '/api/rutas/xyz/asientos'
+                timestamp: '2026-08-27T14:05:00.000Z'
+        '404':
+          description: La ruta no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 404
+                error: 'Not Found'
+                message: 'La ruta 64e2a1b2c3d4e5f6a7b8c9d0 no fue encontrada'
+                path: '/api/rutas/64e2a1b2c3d4e5f6a7b8c9d0/asientos'
+                timestamp: '2026-08-27T14:05:05.000Z'
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                error: 'Internal Server Error'
+                message: 'No se pudo obtener el mapa de asientos'
+                path: '/api/rutas/64e2a1b2c3d4e5f6a7b8c9d0/asientos'
+                timestamp: '2026-08-27T14:05:06.000Z'
+
+  /api/rutas/{rutaId}/asientos/{asientoId}/ocupar:
+    post:
+      tags:
+        - Asientos
+      summary: Ocupar un asiento (paso previo a la reserva)
+      description: >
+        Marca un asiento como `occupied` para el usuario autenticado durante el
+        flujo de compra, evitando doble reserva. El asiento se devuelve con su
+        nuevo estado. Requiere `Authorization: Bearer <token>`. El cuerpo es
+        opcional (puede enviarse vacío `{}`).
+      operationId: asientoOcupar
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RutaIdParam'
+        - $ref: '#/components/parameters/AsientoIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OcuparAsientoRequest'
+            example: {}
+      responses:
+        '200':
+          description: Asiento ocupado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Seat'
+              example:
+                id: '5f2a1b3c4d5e6f7a8b9c0d2e'
+                carriageNumber: 2
+                classType: Standard
+                row: 4
+                seatNumber: 'A4'
+                status: occupied
+                price: 65.50
+        '400':
+          description: 'rutaId o asientoId inválidos.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 400
+                error: 'Bad Request'
+                message: 'El asientoId no tiene un formato de ObjectId válido'
+                path: '/api/rutas/64e2a1b2c3d4e5f6a7b8c9d0/asientos/xyz/ocupar'
+                timestamp: '2026-08-27T14:06:00.000Z'
+        '401':
+          description: Token ausente, inválido o expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                error: 'Unauthorized'
+                message: 'Token inválido o expirado'
+                path: '/api/rutas/64e2a1b2c3d4e5f6a7b8c9d0/asientos/5f2a1b3c4d5e6f7a8b9c0d2e/ocupar'
+                timestamp: '2026-08-27T14:06:05.000Z'
+        '403':
+          description: El asiento ya se encuentra ocupado por otro pasajero.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 403
+                error: 'Forbidden'
+                message: 'El asiento A4 ya se encuentra ocupado'
+                path: '/api/rutas/64e2a1b2c3d4e5f6a7b8c9d0/asientos/5f2a1b3c4d5e6f7a8b9c0d2e/ocupar'
+                timestamp: '2026-08-27T14:06:10.000Z'
+        '404':
+          description: La ruta o el asiento no existen en esa ruta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 404
+                error: 'Not Found'
+                message: 'El asiento 5f2a1b3c4d5e6f7a8b9c0d2e no pertenece a la ruta 64e2a1b2c3d4e5f6a7b8c9d0'
+                path: '/api/rutas/64e2a1b2c3d4e5f6a7b8c9d0/asientos/5f2a1b3c4d5e6f7a8b9c0d2e/ocupar'
+                timestamp: '2026-08-27T14:06:15.000Z'
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                error: 'Internal Server Error'
+                message: 'No se pudo ocupar el asiento'
+                path: '/api/rutas/64e2a1b2c3d4e5f6a7b8c9d0/asientos/5f2a1b3c4d5e6f7a8b9c0d2e/ocupar'
+                timestamp: '2026-08-27T14:06:20.000Z'
+
+  /api/reservas:
+    post:
+      tags:
+        - Reservas
+      summary: Crear una reserva (con pago simulado)
+      description: >
+        Crea una reserva para uno o más asientos de una ruta. El pasajero `i`
+        de `pasajeros` corresponde al asiento `i` de `asientoIds`. El servidor
+        valida disponibilidad, ejecuta la pasarela de pago simulada y emite el
+        ticket con código QR. Requiere `Authorization: Bearer <token>`.
+      operationId: reservasCreate
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationRequest'
+            example:
+              rutaId: '64e2a1b2c3d4e5f6a7b8c9d0'
+              asientoIds:
+                - '5f2a1b3c4d5e6f7a8b9c0d2e'
+                - '5f2a1b3c4d5e6f7a8b9c0d2f'
+              pasajeros:
+                - name: 'María López'
+                  document: '35.412.789'
+                - name: 'Juan Pérez'
+                  document: '38.201.456'
+      responses:
+        '201':
+          description: Reserva creada, pagada y ticket emitido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+              example:
+                id: '64f1b2c3d4e5f6a7b8c9d0e3'
+                code: 'BUS-8F2A'
+                rutaId: '64e2a1b2c3d4e5f6a7b8c9d0'
+                train:
+                  code: 'AVE-103'
+                  name: 'Renfe S-103 Velaro'
+                  type: 'Alta Velocidad'
+                  countryCode: 'ES'
+                origin:
+                  id: 'ES-MAD'
+                  name: 'Madrid Puerta de Atocha'
+                  city: 'Madrid'
+                  countryCode: 'ES'
+                destination:
+                  id: 'ES-BCN'
+                  name: 'Barcelona Sants'
+                  city: 'Barcelona'
+                  countryCode: 'ES'
+                departureAt: '2026-09-01T08:00:00Z'
+                arrivalAt: '2026-09-01T10:30:00Z'
+                seats:
+                  - seatId: '5f2a1b3c4d5e6f7a8b9c0d2e'
+                    seatNumber: 'A4'
+                    carriageNumber: 2
+                    classType: Standard
+                    passengerName: 'María López'
+                    passengerDocument: '35.412.789'
+                  - seatId: '5f2a1b3c4d5e6f7a8b9c0d2f'
+                    seatNumber: 'A5'
+                    carriageNumber: 2
+                    classType: Standard
+                    passengerName: 'Juan Pérez'
+                    passengerDocument: '38.201.456'
+                total: 131.00
+                currency: 'EUR'
+                symbol: '€'
+                status: CONFIRMED
+                paymentMessage: 'Pago simulado aprobado (gateway OK)'
+                qr: 'BUSYAHU|BUS-8F2A|AVE-103|2026-09-01T08:00:00Z|A4,A5|131.00|EUR'
+                createdAt: '2026-08-27T14:03:22.123Z'
+        '400':
+          description: 'Cuerpo inválido, asientos no disponibles o datos incompletos.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 400
+                error: 'Bad Request'
+                message: 'El asiento A4 no está disponible para reservar'
+                path: '/api/reservas'
+                timestamp: '2026-08-27T14:03:30.000Z'
+        '401':
+          description: Token ausente, inválido o expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                error: 'Unauthorized'
+                message: 'Token inválido o expirado'
+                path: '/api/reservas'
+                timestamp: '2026-08-27T14:03:31.000Z'
+        '404':
+          description: La ruta no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 404
+                error: 'Not Found'
+                message: 'La ruta 64e2a1b2c3d4e5f6a7b8c9d0 no fue encontrada'
+                path: '/api/reservas'
+                timestamp: '2026-08-27T14:03:35.000Z'
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                error: 'Internal Server Error'
+                message: 'No se pudo procesar la reserva'
+                path: '/api/reservas'
+                timestamp: '2026-08-27T14:03:40.000Z'
+
+    get:
+      tags:
+        - Reservas
+      summary: Listar las reservas del usuario autenticado
+      description: >
+        Devuelve todas las reservas creadas por el usuario dueño del token, de
+        más reciente a más antigua. Requiere `Authorization: Bearer <token>`.
+      operationId: reservasList
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de reservas del usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationsResponse'
+              example:
+                data:
+                  - id: '64f1b2c3d4e5f6a7b8c9d0e3'
+                    code: 'BUS-8F2A'
+                    rutaId: '64e2a1b2c3d4e5f6a7b8c9d0'
+                    train:
+                      code: 'AVE-103'
+                      name: 'Renfe S-103 Velaro'
+                      type: 'Alta Velocidad'
+                      countryCode: 'ES'
+                    origin:
+                      id: 'ES-MAD'
+                      name: 'Madrid Puerta de Atocha'
+                      city: 'Madrid'
+                      countryCode: 'ES'
+                    destination:
+                      id: 'ES-BCN'
+                      name: 'Barcelona Sants'
+                      city: 'Barcelona'
+                      countryCode: 'ES'
+                    departureAt: '2026-09-01T08:00:00Z'
+                    arrivalAt: '2026-09-01T10:30:00Z'
+                    seats:
+                      - seatId: '5f2a1b3c4d5e6f7a8b9c0d2e'
+                        seatNumber: 'A4'
+                        carriageNumber: 2
+                        classType: Standard
+                        passengerName: 'María López'
+                        passengerDocument: '35.412.789'
+                    total: 65.50
+                    currency: 'EUR'
+                    symbol: '€'
+                    status: CONFIRMED
+                    paymentMessage: 'Pago simulado aprobado (gateway OK)'
+                    qr: 'BUSYAHU|BUS-8F2A|AVE-103|2026-09-01T08:00:00Z|A4|65.50|EUR'
+                    createdAt: '2026-08-27T14:03:22.123Z'
+                total: 1
+        '401':
+          description: Token ausente, inválido o expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                error: 'Unauthorized'
+                message: 'Token inválido o expirado'
+                path: '/api/reservas'
+                timestamp: '2026-08-27T14:07:00.000Z'
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                error: 'Internal Server Error'
+                message: 'No se pudieron obtener las reservas'
+                path: '/api/reservas'
+                timestamp: '2026-08-27T14:07:01.000Z'
+
+  /api/reservas/{reservaId}:
+    get:
+      tags:
+        - Reservas
+      summary: Obtener detalle de una reserva
+      description: >
+        Devuelve el detalle completo de una reserva, incluido el payload del
+        ticket QR. Solo el propietario puede consultar su reserva. Requiere
+        `Authorization: Bearer <token>`.
+      operationId: reservaDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservaIdParam'
+      responses:
+        '200':
+          description: Detalle de la reserva.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+              example:
+                id: '64f1b2c3d4e5f6a7b8c9d0e3'
+                code: 'BUS-8F2A'
+                rutaId: '64e2a1b2c3d4e5f6a7b8c9d0'
+                train:
+                  code: 'AVE-103'
+                  name: 'Renfe S-103 Velaro'
+                  type: 'Alta Velocidad'
+                  countryCode: 'ES'
+                origin:
+                  id: 'ES-MAD'
+                  name: 'Madrid Puerta de Atocha'
+                  city: 'Madrid'
+                  countryCode: 'ES'
+                destination:
+                  id: 'ES-BCN'
+                  name: 'Barcelona Sants'
+                  city: 'Barcelona'
+                  countryCode: 'ES'
+                departureAt: '2026-09-01T08:00:00Z'
+                arrivalAt: '2026-09-01T10:30:00Z'
+                seats:
+                  - seatId: '5f2a1b3c4d5e6f7a8b9c0d2e'
+                    seatNumber: 'A4'
+                    carriageNumber: 2
+                    classType: Standard
+                    passengerName: 'María López'
+                    passengerDocument: '35.412.789'
+                total: 65.50
+                currency: 'EUR'
+                symbol: '€'
+                status: CONFIRMED
+                paymentMessage: 'Pago simulado aprobado (gateway OK)'
+                qr: 'BUSYAHU|BUS-8F2A|AVE-103|2026-09-01T08:00:00Z|A4|65.50|EUR'
+                createdAt: '2026-08-27T14:03:22.123Z'
+        '400':
+          description: 'reservaId no es un ObjectId válido.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 400
+                error: 'Bad Request'
+                message: 'El reservaId no tiene un formato de ObjectId válido'
+                path: '/api/reservas/xyz'
+                timestamp: '2026-08-27T14:08:00.000Z'
+        '401':
+          description: Token ausente, inválido o expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                error: 'Unauthorized'
+                message: 'Token inválido o expirado'
+                path: '/api/reservas/64f1b2c3d4e5f6a7b8c9d0e3'
+                timestamp: '2026-08-27T14:08:05.000Z'
+        '403':
+          description: La reserva pertenece a otro usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 403
+                error: 'Forbidden'
+                message: 'No tiene permisos para acceder a la reserva de otro usuario'
+                path: '/api/reservas/64f1b2c3d4e5f6a7b8c9d0e3'
+                timestamp: '2026-08-27T14:08:10.000Z'
+        '404':
+          description: La reserva no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 404
+                error: 'Not Found'
+                message: 'La reserva 64f1b2c3d4e5f6a7b8c9d0e3 no fue encontrada'
+                path: '/api/reservas/64f1b2c3d4e5f6a7b8c9d0e3'
+                timestamp: '2026-08-27T14:08:15.000Z'
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                error: 'Internal Server Error'
+                message: 'No se pudo obtener la reserva'
+                path: '/api/reservas/64f1b2c3d4e5f6a7b8c9d0e3'
+                timestamp: '2026-08-27T14:08:20.000Z'
+
+    delete:
+      tags:
+        - Reservas
+      summary: Cancelar una reserva
+      description: >
+        Cancela una reserva (estado pasa a `CANCELLED`) y libera los asientos
+        asociados para que vuelvan a estar `available`. Solo el propietario
+        puede cancelar. Requiere `Authorization: Bearer <token>`.
+      operationId: reservaCancel
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservaIdParam'
+      responses:
+        '200':
+          description: Reserva cancelada y asientos liberados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteReservationResponse'
+              example:
+                message: 'Reserva BUS-8F2A cancelada correctamente. Los asientos fueron liberados.'
+                reservation:
+                  id: '64f1b2c3d4e5f6a7b8c9d0e3'
+                  code: 'BUS-8F2A'
+                  rutaId: '64e2a1b2c3d4e5f6a7b8c9d0'
+                  train:
+                    code: 'AVE-103'
+                    name: 'Renfe S-103 Velaro'
+                    type: 'Alta Velocidad'
+                    countryCode: 'ES'
+                  origin:
+                    id: 'ES-MAD'
+                    name: 'Madrid Puerta de Atocha'
+                    city: 'Madrid'
+                    countryCode: 'ES'
+                  destination:
+                    id: 'ES-BCN'
+                    name: 'Barcelona Sants'
+                    city: 'Barcelona'
+                    countryCode: 'ES'
+                  departureAt: '2026-09-01T08:00:00Z'
+                  arrivalAt: '2026-09-01T10:30:00Z'
+                  seats:
+                    - seatId: '5f2a1b3c4d5e6f7a8b9c0d2e'
+                      seatNumber: 'A4'
+                      carriageNumber: 2
+                      classType: Standard
+                      passengerName: 'María López'
+                      passengerDocument: '35.412.789'
+                  total: 65.50
+                  currency: 'EUR'
+                  symbol: '€'
+                  status: CANCELLED
+                  paymentMessage: 'Reserva cancelada. El pago simulado fue reembolsado.'
+                  qr: 'BUSYAHU|BUS-8F2A|AVE-103|2026-09-01T08:00:00Z|A4|65.50|EUR'
+                  createdAt: '2026-08-27T14:03:22.123Z'
+        '400':
+          description: 'reservaId no es un ObjectId válido o la reserva ya está cancelada.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 400
+                error: 'Bad Request'
+                message: 'La reserva ya se encuentra cancelada'
+                path: '/api/reservas/64f1b2c3d4e5f6a7b8c9d0e3'
+                timestamp: '2026-08-27T14:09:00.000Z'
+        '401':
+          description: Token ausente, inválido o expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                error: 'Unauthorized'
+                message: 'Token inválido o expirado'
+                path: '/api/reservas/64f1b2c3d4e5f6a7b8c9d0e3'
+                timestamp: '2026-08-27T14:09:05.000Z'
+        '403':
+          description: La reserva pertenece a otro usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 403
+                error: 'Forbidden'
+                message: 'No tiene permisos para cancelar la reserva de otro usuario'
+                path: '/api/reservas/64f1b2c3d4e5f6a7b8c9d0e3'
+                timestamp: '2026-08-27T14:09:10.000Z'
+        '404':
+          description: La reserva no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 404
+                error: 'Not Found'
+                message: 'La reserva 64f1b2c3d4e5f6a7b8c9d0e3 no fue encontrada'
+                path: '/api/reservas/64f1b2c3d4e5f6a7b8c9d0e3'
+                timestamp: '2026-08-27T14:09:15.000Z'
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                error: 'Internal Server Error'
+                message: 'No se pudo cancelar la reserva'
+                path: '/api/reservas/64f1b2c3d4e5f6a7b8c9d0e3'
+                timestamp: '2026-08-27T14:09:20.000Z'
+
+  /api/admin/reportes:
+    get:
+      tags:
+        - Admin
+      summary: Reportes estadísticos generales (solo admin)
+      description: >
+        Devuelve estadísticas globales de la plataforma: total de reservas,
+        ingresos, ocupación promedio, ventas por clase y por ruta. Exclusivo
+        para el rol `admin`. Requiere `Authorization: Bearer <token>` con rol
+        `admin`; si el token corresponde a un `user`, se devuelve 403.
+      operationId: adminReportes
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Reporte estadístico generado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReport'
+              example:
+                generatedAt: '2026-08-27T14:05:00.000Z'
+                totalReservations: 348
+                totalRevenue: 25476.50
+                reservationsConfirmed: 300
+                reservationsCancelled: 48
+                averageOccupancy: 78.5
+                seatsSold: 610
+                reservationsByClass:
+                  - classType: First
+                    quantity: 85
+                  - classType: Standard
+                    quantity: 525
+                reservationsByRoute:
+                  - rutaId: '64e2a1b2c3d4e5f6a7b8c9d0'
+                    train: 'AVE-103'
+                    totalReserved: 120
+                    seatsSold: 96
+                    revenue: 10250.50
+                topRoutes:
+                  - rutaId: '64e2a1b2c3d4e5f6a7b8c9d0'
+                    train: 'AVE-103'
+                    bookings: 64
+                    revenue: 5840.00
+        '401':
+          description: Token ausente, inválido o expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                error: 'Unauthorized'
+                message: 'Token inválido o expirado'
+                path: '/api/admin/reportes'
+                timestamp: '2026-08-27T14:10:00.000Z'
+        '403':
+          description: El usuario autenticado no tiene rol admin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 403
+                error: 'Forbidden'
+                message: 'Se requiere rol admin para acceder a los reportes'
+                path: '/api/admin/reportes'
+                timestamp: '2026-08-27T14:10:05.000Z'
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                error: 'Internal Server Error'
+                message: 'No se pudo generar el reporte'
+                path: '/api/admin/reportes'
+                timestamp: '2026-08-27T14:10:10.000Z'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'Token JWT obtenido en POST /api/auth/login. Formato: Authorization: Bearer <token>.'
+
+  parameters:
+    RutaIdParam:
+      name: rutaId
+      in: path
+      required: true
+      description: 'Identificador único de la ruta (viaje). ObjectId de MongoDB de 24 caracteres hexadecimales.'
+      schema:
+        type: string
+        pattern: '^[a-fA-F0-9]{24}$'
+      example: '64e2a1b2c3d4e5f6a7b8c9d0'
+    AsientoIdParam:
+      name: asientoId
+      in: path
+      required: true
+      description: 'Identificador único del asiento dentro de la ruta. ObjectId de MongoDB de 24 caracteres hexadecimales.'
+      schema:
+        type: string
+        pattern: '^[a-fA-F0-9]{24}$'
+      example: '5f2a1b3c4d5e6f7a8b9c0d2e'
+    ReservaIdParam:
+      name: reservaId
+      in: path
+      required: true
+      description: 'Identificador único de la reserva. ObjectId de MongoDB de 24 caracteres hexadecimales.'
+      schema:
+        type: string
+        pattern: '^[a-fA-F0-9]{24}$'
+      example: '64f1b2c3d4e5f6a7b8c9d0e3'
+
+  schemas:
+    Role:
+      type: string
+      enum:
+        - user
+        - admin
+      description: 'Rol del usuario. `admin` se crea por seed; `user` por registro.'
+    ClassType:
+      type: string
+      enum:
+        - First
+        - Standard
+      description: 'Clase del vagón del tren.'
+    SeatStatus:
+      type: string
+      enum:
+        - available
+        - occupied
+      description: 'Estado del asiento: disponible u ocupado.'
+    ReservationStatus:
+      type: string
+      enum:
+        - CONFIRMED
+        - CANCELLED
+      description: 'Estado de una reserva: confirmada o cancelada.'
+
+    ErrorResponse:
+      type: object
+      description: 'Envoltorio único y obligatorio para todas las respuestas de error (400, 401, 403, 404, 500). Idéntico en ambos backends.'
+      required:
+        - statusCode
+        - error
+        - message
+        - path
+        - timestamp
+      properties:
+        statusCode:
+          type: integer
+          description: 'Código HTTP del error (400, 401, 403, 404 o 500).'
+          example: 400
+        error:
+          type: string
+          description: 'Frase corta del tipo de error (ej: Bad Request, Unauthorized, Forbidden, Not Found, Internal Server Error).'
+          example: 'Bad Request'
+        message:
+          type: string
+          description: 'Descripción legible y accionable del error.'
+          example: 'El email ya se encuentra registrado'
+        path:
+          type: string
+          description: 'Ruta de la petición que originó el error.'
+          example: '/api/auth/register'
+        timestamp:
+          type: string
+          format: date-time
+          description: 'Momento en que ocurrió el error (ISO 8601).'
+          example: '2026-08-27T14:00:01.000Z'
+
+    User:
+      type: object
+      description: 'Usuario del sistema. Nunca se expone el password ni su hash.'
+      required:
+        - id
+        - name
+        - email
+        - role
+        - createdAt
+      properties:
+        id:
+          type: string
+          pattern: '^[a-fA-F0-9]{24}$'
+          description: 'ObjectId del usuario.'
+          example: '64a1e2d3c4b5a6f7e8d9c0b1'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 80
+          description: 'Nombre y apellido del usuario.'
+          example: 'María López'
+        email:
+          type: string
+          format: email
+          description: 'Email único de la cuenta.'
+          example: 'maria.lopez@example.com'
+        role:
+          $ref: '#/components/schemas/Role'
+        createdAt:
+          type: string
+          format: date-time
+          description: 'Fecha de creación de la cuenta.'
+          example: '2026-08-20T10:00:00.000Z'
+
+    RegisterRequest:
+      type: object
+      description: 'Cuerpo de POST /api/auth/register.'
+      required:
+        - name
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 80
+          description: 'Nombre y apellido del nuevo pasajero.'
+          example: 'María López'
+        email:
+          type: string
+          format: email
+          description: 'Email único de la cuenta.'
+          example: 'maria.lopez@example.com'
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          format: password
+          description: 'Contraseña en texto plano. Se hashea con bcrypt en el backend.'
+          example: 'Segura123!'
+
+    LoginRequest:
+      type: object
+      description: 'Cuerpo de POST /api/auth/login.'
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: 'pasajero@busyahu.com'
+        password:
+          type: string
+          format: password
+          example: 'Pasajero123!'
+
+    AuthResponse:
+      type: object
+      description: 'Respuesta exitosa de login: token JWT + datos del usuario.'
+      required:
+        - token
+        - tokenType
+        - expiresIn
+        - user
+      properties:
+        token:
+          type: string
+          description: 'Token JWT firmado.'
+          example: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2NGExZTJkM2M0YjVhNmY3ZThkOWMwYjEifQ.signature_ejemplo'
+        tokenType:
+          type: string
+          enum:
+            - Bearer
+          example: 'Bearer'
+        expiresIn:
+          type: integer
+          description: 'Tiempo de expiración del token en segundos.'
+          example: 86400
+        user:
+          $ref: '#/components/schemas/User'
+
+    Station:
+      type: object
+      description: 'Estación de una red de transporte.'
+      required:
+        - id
+        - name
+        - city
+        - countryCode
+      properties:
+        id:
+          type: string
+          description: 'Código de estación (ej: ES-MAD).'
+          example: 'ES-MAD'
+        name:
+          type: string
+          description: 'Nombre oficial de la estación.'
+          example: 'Madrid Puerta de Atocha'
+        city:
+          type: string
+          description: 'Ciudad donde se ubica la estación.'
+          example: 'Madrid'
+        countryCode:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          description: 'Código de país ISO 3166-1 alpha-2.'
+          example: 'ES'
+
+    TrainSummary:
+      type: object
+      description: 'Resumen del tren / unidad en una ruta o reserva.'
+      required:
+        - code
+        - name
+        - type
+        - countryCode
+      properties:
+        code:
+          type: string
+          description: 'Código único del tren (ej: AVE-103).'
+          example: 'AVE-103'
+        name:
+          type: string
+          description: 'Nombre del tren.'
+          example: 'Renfe S-103 Velaro'
+        type:
+          type: string
+          description: 'Tipo de servicio.'
+          example: 'Alta Velocidad'
+        countryCode:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          description: 'País de la red a la que pertenece el tren.'
+          example: 'ES'
+
+    RutaClass:
+      type: object
+      description: 'Disponibilidad y precio por clase dentro de una ruta.'
+      required:
+        - classType
+        - price
+        - availableSeats
+      properties:
+        classType:
+          $ref: '#/components/schemas/ClassType'
+        price:
+          type: number
+          minimum: 0
+          description: 'Precio base del asiento en esa clase.'
+          example: 65.5
+        availableSeats:
+          type: integer
+          minimum: 0
+          description: 'Asientos disponibles en esa clase.'
+          example: 40
+
+    Ruta:
+      type: object
+      description: 'Ruta / viaje disponible para reservar.'
+      required:
+        - id
+        - train
+        - origin
+        - destination
+        - departureAt
+        - arrivalAt
+        - durationMinutes
+        - basePrice
+        - currency
+        - symbol
+        - availableSeats
+        - totalSeats
+        - classes
+      properties:
+        id:
+          type: string
+          pattern: '^[a-fA-F0-9]{24}$'
+          description: 'ObjectId de la ruta.'
+          example: '64e2a1b2c3d4e5f6a7b8c9d0'
+        train:
+          $ref: '#/components/schemas/TrainSummary'
+        origin:
+          $ref: '#/components/schemas/Station'
+        destination:
+          $ref: '#/components/schemas/Station'
+        departureAt:
+          type: string
+          format: date-time
+          description: 'Fecha y hora de salida (ISO 8601).'
+          example: '2026-09-01T08:00:00Z'
+        arrivalAt:
+          type: string
+          format: date-time
+          description: 'Fecha y hora de llegada (ISO 8601).'
+          example: '2026-09-01T10:30:00Z'
+        durationMinutes:
+          type: integer
+          minimum: 1
+          description: 'Duración del viaje en minutos.'
+          example: 150
+        basePrice:
+          type: number
+          minimum: 0
+          description: 'Precio base del pasaje.'
+          example: 65.5
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: 'Moneda (ISO 4217).'
+          example: 'EUR'
+        symbol:
+          type: string
+          description: 'Símbolo monetario.'
+          example: '€'
+        availableSeats:
+          type: integer
+          minimum: 0
+          description: 'Total de asientos disponibles en la ruta.'
+          example: 54
+        totalSeats:
+          type: integer
+          minimum: 1
+          description: 'Capacidad total de la unidad.'
+          example: 100
+        classes:
+          type: array
+          description: 'Disponibilidad desglosada por clase.'
+          items:
+            $ref: '#/components/schemas/RutaClass'
+
+    RutasResponse:
+      type: object
+      description: 'Respuesta paginada de GET /api/rutas.'
+      required:
+        - data
+        - total
+        - page
+        - limit
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ruta'
+        total:
+          type: integer
+          minimum: 0
+          description: 'Total de rutas que coinciden con los filtros (sin paginar).'
+          example: 12
+        page:
+          type: integer
+          minimum: 1
+          description: 'Página actual.'
+          example: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: 'Resultados por página.'
+          example: 20
+
+    Seat:
+      type: object
+      description: 'Asiento individual dentro de un vagón.'
+      required:
+        - id
+        - carriageNumber
+        - classType
+        - row
+        - seatNumber
+        - status
+        - price
+      properties:
+        id:
+          type: string
+          pattern: '^[a-fA-F0-9]{24}$'
+          description: 'ObjectId del asiento.'
+          example: '5f2a1b3c4d5e6f7a8b9c0d2e'
+        carriageNumber:
+          type: integer
+          minimum: 1
+          description: 'Número de vagón.'
+          example: 2
+        classType:
+          $ref: '#/components/schemas/ClassType'
+        row:
+          type: integer
+          minimum: 1
+          description: 'Fila del asiento.'
+          example: 4
+        seatNumber:
+          type: string
+          description: 'Código visible del asiento (letra de columna + fila).'
+          example: 'A4'
+        status:
+          $ref: '#/components/schemas/SeatStatus'
+        price:
+          type: number
+          minimum: 0
+          description: 'Precio del asiento según clase.'
+          example: 65.5
+
+    Carriage:
+      type: object
+      description: 'Vagón (carriage) con su disposición y sus asientos.'
+      required:
+        - carriageNumber
+        - classType
+        - rows
+        - seatsPerRow
+        - seats
+      properties:
+        carriageNumber:
+          type: integer
+          minimum: 1
+          description: 'Número de vagón.'
+          example: 1
+        classType:
+          $ref: '#/components/schemas/ClassType'
+        rows:
+          type: integer
+          minimum: 1
+          description: 'Cantidad de filas del vagón.'
+          example: 5
+        seatsPerRow:
+          type: integer
+          minimum: 1
+          description: 'Asientos por fila.'
+          example: 4
+        seats:
+          type: array
+          description: 'Lista de asientos del vagón.'
+          items:
+            $ref: '#/components/schemas/Seat'
+
+    SeatMap:
+      type: object
+      description: 'Mapa de asientos de una ruta. Se corresponde con la colección `trains` y su configuración de carriages.'
+      required:
+        - rutaId
+        - train
+        - totalSeats
+        - availableSeats
+        - carriages
+      properties:
+        rutaId:
+          type: string
+          pattern: '^[a-fA-F0-9]{24}$'
+          description: 'ObjectId de la ruta a la que pertenece el mapa.'
+          example: '64e2a1b2c3d4e5f6a7b8c9d0'
+        train:
+          $ref: '#/components/schemas/TrainSummary'
+        totalSeats:
+          type: integer
+          minimum: 1
+          description: 'Capacidad total de la unidad.'
+          example: 100
+        availableSeats:
+          type: integer
+          minimum: 0
+          description: 'Asientos disponibles.'
+          example: 54
+        carriages:
+          type: array
+          description: 'Vagones de la unidad con su mapa de asientos.'
+          items:
+            $ref: '#/components/schemas/Carriage'
+
+    OcuparAsientoRequest:
+      type: object
+      description: >
+        Cuerpo opcional de POST /api/rutas/{rutaId}/asientos/{asientoId}/ocupar.
+        Puede enviarse vacío ({}); la ocupación se asocia al usuario autenticado.
+      properties:
+        reason:
+          type: string
+          maxLength: 100
+          description: 'Motivo opcional de la ocupación (uso interno / auditoría).'
+          example: 'Selección del pasajero durante la compra'
+      example:
+        reason: 'Selección del pasajero durante la compra'
+
+    Passenger:
+      type: object
+      description: 'Pasajero asociado a un asiento en una reserva.'
+      required:
+        - name
+        - document
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+          description: 'Nombre y apellido del pasajero.'
+          example: 'María López'
+        document:
+          type: string
+          minLength: 4
+          maxLength: 40
+          description: 'Documento de identidad (DNI, DNI-pasaporte, etc.).'
+          example: '35.412.789'
+        email:
+          type: string
+          format: email
+          description: 'Contacto opcional del pasajero.'
+          example: 'maria.lopez@example.com'
+
+    ReservationRequest:
+      type: object
+      description: 'Cuerpo de POST /api/reservas. El pasajero `i` corresponde al asiento `i` (mismo orden en ambos arreglos).'
+      required:
+        - rutaId
+        - asientoIds
+        - pasajeros
+      properties:
+        rutaId:
+          type: string
+          pattern: '^[a-fA-F0-9]{24}$'
+          description: 'ObjectId de la ruta a reservar.'
+          example: '64e2a1b2c3d4e5f6a7b8c9d0'
+        asientoIds:
+          type: array
+          description: 'IDs de los asientos a reservar (1 a 8).'
+          minItems: 1
+          maxItems: 8
+          items:
+            type: string
+            pattern: '^[a-fA-F0-9]{24}$'
+          example:
+            - '5f2a1b3c4d5e6f7a8b9c0d2e'
+            - '5f2a1b3c4d5e6f7a8b9c0d2f'
+        pasajeros:
+          type: array
+          description: 'Un pasajero por asiento, en el MISMO ORDEN que asientoIds. La cantidad debe coincidir.'
+          minItems: 1
+          maxItems: 8
+          items:
+            $ref: '#/components/schemas/Passenger'
+
+    ReservationSeat:
+      type: object
+      description: 'Asiento reservado con su pasajero asignado.'
+      required:
+        - seatId
+        - seatNumber
+        - carriageNumber
+        - classType
+        - passengerName
+        - passengerDocument
+      properties:
+        seatId:
+          type: string
+          pattern: '^[a-fA-F0-9]{24}$'
+          description: 'ObjectId del asiento reservado.'
+          example: '5f2a1b3c4d5e6f7a8b9c0d2e'
+        seatNumber:
+          type: string
+          description: 'Código visible del asiento.'
+          example: 'A4'
+        carriageNumber:
+          type: integer
+          minimum: 1
+          description: 'Número de vagón.'
+          example: 2
+        classType:
+          $ref: '#/components/schemas/ClassType'
+        passengerName:
+          type: string
+          description: 'Nombre y apellido del pasajero.'
+          example: 'María López'
+        passengerDocument:
+          type: string
+          description: 'Documento del pasajero.'
+          example: '35.412.789'
+
+    Reservation:
+      type: object
+      description: 'Reserva emitida con ticket QR.'
+      required:
+        - id
+        - code
+        - rutaId
+        - train
+        - origin
+        - destination
+        - departureAt
+        - arrivalAt
+        - seats
+        - total
+        - currency
+        - symbol
+        - status
+        - paymentMessage
+        - qr
+        - createdAt
+      properties:
+        id:
+          type: string
+          pattern: '^[a-fA-F0-9]{24}$'
+          description: 'ObjectId de la reserva.'
+          example: '64f1b2c3d4e5f6a7b8c9d0e3'
+        code:
+          type: string
+          description: 'Código alfanumérico de la reserva / ticket (ej: BUS-8F2A).'
+          example: 'BUS-8F2A'
+        rutaId:
+          type: string
+          pattern: '^[a-fA-F0-9]{24}$'
+          description: 'ObjectId de la ruta reservada.'
+          example: '64e2a1b2c3d4e5f6a7b8c9d0'
+        train:
+          $ref: '#/components/schemas/TrainSummary'
+        origin:
+          $ref: '#/components/schemas/Station'
+        destination:
+          $ref: '#/components/schemas/Station'
+        departureAt:
+          type: string
+          format: date-time
+          example: '2026-09-01T08:00:00Z'
+        arrivalAt:
+          type: string
+          format: date-time
+          example: '2026-09-01T10:30:00Z'
+        seats:
+          type: array
+          description: 'Asientos reservados con sus pasajeros.'
+          items:
+            $ref: '#/components/schemas/ReservationSeat'
+        total:
+          type: number
+          minimum: 0
+          description: 'Monto total de la reserva.'
+          example: 131.0
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: 'Moneda (ISO 4217).'
+          example: 'EUR'
+        symbol:
+          type: string
+          description: 'Símbolo monetario.'
+          example: '€'
+        status:
+          $ref: '#/components/schemas/ReservationStatus'
+        paymentMessage:
+          type: string
+          description: 'Resultado de la pasarela de pago simulada.'
+          example: 'Pago simulado aprobado (gateway OK)'
+        qr:
+          type: string
+          description: 'Contenido codificado que el frontend renderiza como ticket QR (formato SVG/QR).'
+          example: 'BUSYAHU|BUS-8F2A|AVE-103|2026-09-01T08:00:00Z|A4,A5|131.00|EUR'
+        createdAt:
+          type: string
+          format: date-time
+          description: 'Momento de creación de la reserva.'
+          example: '2026-08-27T14:03:22.123Z'
+
+    ReservationsResponse:
+      type: object
+      description: 'Respuesta paginada/lista de GET /api/reservas.'
+      required:
+        - data
+        - total
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reservation'
+        total:
+          type: integer
+          minimum: 0
+          description: 'Cantidad total de reservas del usuario.'
+          example: 3
+
+    DeleteReservationResponse:
+      type: object
+      description: 'Respuesta de DELETE /api/reservas/{reservaId}: mensaje + reserva cancelada.'
+      required:
+        - message
+        - reservation
+      properties:
+        message:
+          type: string
+          description: 'Mensaje de confirmación.'
+          example: 'Reserva BUS-8F2A cancelada correctamente. Los asientos fueron liberados.'
+        reservation:
+          $ref: '#/components/schemas/Reservation'
+
+    AdminReport:
+      type: object
+      description: 'Reporte estadístico general (solo rol admin).'
+      required:
+        - generatedAt
+        - totalReservations
+        - totalRevenue
+        - reservationsConfirmed
+        - reservationsCancelled
+        - averageOccupancy
+        - seatsSold
+        - reservationsByClass
+        - reservationsByRoute
+        - topRoutes
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+          description: 'Momento en que se generó el reporte.'
+          example: '2026-08-27T14:05:00.000Z'
+        totalReservations:
+          type: integer
+          minimum: 0
+          description: 'Total de reservas registradas.'
+          example: 348
+        totalRevenue:
+          type: number
+          minimum: 0
+          description: 'Ingreso total acumulado.'
+          example: 25476.5
+        reservationsConfirmed:
+          type: integer
+          minimum: 0
+          description: 'Reservas confirmadas.'
+          example: 300
+        reservationsCancelled:
+          type: integer
+          minimum: 0
+          description: 'Reservas canceladas.'
+          example: 48
+        averageOccupancy:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: 'Ocupación promedio de asientos en porcentaje (0-100).'
+          example: 78.5
+        seatsSold:
+          type: integer
+          minimum: 0
+          description: 'Asientos vendidos en total.'
+          example: 610
+        reservationsByClass:
+          type: array
+          description: 'Ventas desglosadas por clase.'
+          items:
+            type: object
+            required:
+              - classType
+              - quantity
+            properties:
+              classType:
+                $ref: '#/components/schemas/ClassType'
+              quantity:
+                type: integer
+                minimum: 0
+                description: 'Asientos vendidos en esa clase.'
+                example: 525
+        reservationsByRoute:
+          type: array
+          description: 'Ventas desglosadas por ruta.'
+          items:
+            type: object
+            required:
+              - rutaId
+              - train
+              - totalReserved
+              - seatsSold
+              - revenue
+            properties:
+              rutaId:
+                type: string
+                pattern: '^[a-fA-F0-9]{24}$'
+                example: '64e2a1b2c3d4e5f6a7b8c9d0'
+              train:
+                type: string
+                description: 'Código del tren.'
+                example: 'AVE-103'
+              totalReserved:
+                type: integer
+                minimum: 0
+                description: 'Reservas registradas para esa ruta.'
+                example: 120
+              seatsSold:
+                type: integer
+                minimum: 0
+                description: 'Asientos vendidos en esa ruta.'
+                example: 96
+              revenue:
+                type: number
+                minimum: 0
+                description: 'Ingreso generado por esa ruta.'
+                example: 10250.5
+        topRoutes:
+          type: array
+          description: 'Rutas más vendidas (ranking).'
+          items:
+            type: object
+            required:
+              - rutaId
+              - train
+              - bookings
+              - revenue
+            properties:
+              rutaId:
+                type: string
+                pattern: '^[a-fA-F0-9]{24}$'
+                example: '64e2a1b2c3d4e5f6a7b8c9d0'
+              train:
+                type: string
+                description: 'Código del tren.'
+                example: 'AVE-103'
+              bookings:
+                type: integer
+                minimum: 0
+                description: 'Cantidad de reservas de la ruta.'
+                example: 64
+              revenue:
+                type: number
+                minimum: 0
+                description: 'Ingreso generado por la ruta.'
+                example: 5840.0
