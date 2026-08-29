@@ -3,7 +3,8 @@ from app.schemas.user import (
     UserLoginRequest,
     UserResponse,
     AuthResponse,
-    TokenData
+    TokenData,
+    ErrorResponse,
 )
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "UserLoginRequest",
     "UserResponse",
     "AuthResponse",
-    "TokenData"
+    "TokenData",
+    "ErrorResponse",
 ]
