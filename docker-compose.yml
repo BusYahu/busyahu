@@ -1,3 +1,6 @@
+version: '3.8'
+
+
 services:
   mongo:
     image: mongo:7.0
@@ -6,9 +9,9 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: Admin123!
-      MONGO_INITDB_DATABASE: busyahu_db
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-Admin123!}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-busyahu_db}
     volumes:
       - busyahu_mongo_data:/data/db
       - ./database/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
@@ -18,6 +21,68 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
+
+  backend-express:
+    build:
+      context: ./backend-express
+      dockerfile: Dockerfile
+    container_name: busyahu-express
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      PORT_EXPRESS: 4000
+      MONGO_URI: mongodb://admin:Admin123!@mongo:27017/busyahu_db?authSource=admin
+      MONGO_DB_NAME: busyahu_db
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_busyahu_prog3_2026_secure}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  backend-fastapi:
+    build:
+      context: ./backend-fastapi
+      dockerfile: Dockerfile
+    container_name: busyahu-fastapi
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      PORT_FASTAPI: 8000
+      MONGO_URI: mongodb://admin:Admin123!@mongo:27017/busyahu_db?authSource=admin
+      MONGO_DB_NAME: busyahu_db
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_busyahu_prog3_2026_secure}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  frontend-react:
+    build:
+      context: ./frontend-react
+      dockerfile: Dockerfile
+    container_name: busyahu-react
+    restart: always
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend-express
+      - backend-fastapi
+
+  frontend-svelte:
+    build:
+      context: ./frontend-svelte
+      dockerfile: Dockerfile
+    container_name: busyahu-svelte
+    restart: always
+    ports:
+      - "5174:5174"
+    depends_on:
+      - backend-express
+      - backend-fastapi
 
 volumes:
   busyahu_mongo_data:
