@@ -3,8 +3,22 @@ from app.schemas.user import (
     UserLoginRequest,
     UserResponse,
     AuthResponse,
-    TokenData,
-    ErrorResponse,
+    TokenData
+)
+from app.schemas.destination import (
+    CityItem,
+    DestinationResponse
+)
+from app.schemas.train import (
+    TrainResponse,
+    TrainSeatResponse,
+    SeatMapResponse
+)
+from app.schemas.booking import (
+    PassengerItem,
+    BookingCreateRequest,
+    BookingResponse,
+    BookingCancelResponse
 )
 
 __all__ = [
@@ -13,5 +27,13 @@ __all__ = [
     "UserResponse",
     "AuthResponse",
     "TokenData",
-    "ErrorResponse",
+    "CityItem",
+    "DestinationResponse",
+    "TrainResponse",
+    "TrainSeatResponse",
+    "SeatMapResponse",
+    "PassengerItem",
+    "BookingCreateRequest",
+    "BookingResponse",
+    "BookingCancelResponse"
 ]
