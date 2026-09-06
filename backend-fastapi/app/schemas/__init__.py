@@ -6,12 +6,18 @@ from app.schemas.user import (
     TokenData
 )
 from app.schemas.destination import (
-    CityItem,
-    DestinationResponse
+    Station,
+    DestinationResponse,
+    DestinationsResponse
 )
 from app.schemas.train import (
-    TrainResponse,
-    TrainSeatResponse,
+    CarriageConfig,
+    TrainSearchItem,
+    TrainSearchResponse,
+    TrainSummary,
+    TrainDetailResponse,
+    SeatItem,
+    CarriageSeatsResponse,
     SeatMapResponse
 )
 from app.schemas.booking import (
@@ -27,10 +33,16 @@ __all__ = [
     "UserResponse",
     "AuthResponse",
     "TokenData",
-    "CityItem",
+    "Station",
     "DestinationResponse",
-    "TrainResponse",
-    "TrainSeatResponse",
+    "DestinationsResponse",
+    "CarriageConfig",
+    "TrainSearchItem",
+    "TrainSearchResponse",
+    "TrainSummary",
+    "TrainDetailResponse",
+    "SeatItem",
+    "CarriageSeatsResponse",
     "SeatMapResponse",
     "PassengerItem",
     "BookingCreateRequest",
