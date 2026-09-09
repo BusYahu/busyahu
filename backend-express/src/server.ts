@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/db';
 import authRoutes from './routes/auth.routes';
 import trainRoutes from './routes/trains.routes';
+import bookingRoutes from './routes/bookings.routes';
 
 dotenv.config();
 
@@ -18,9 +19,10 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', backend: 'express', version: '1.0.0' });
 });
 
-// Rutas de la API
+// Rutas API
 app.use('/api/auth', authRoutes);
-app.use('/api', trainRoutes); // Expone /api/destinations y /api/trains/*
+app.use('/api', trainRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 async function start() {
   await connectDB();
