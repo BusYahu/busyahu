@@ -1,3 +1,10 @@
+<!-- calidad:inicio -->
+![Calidad](https://img.shields.io/badge/Calidad-5%2F100-red) ![Cumple](https://img.shields.io/badge/Cumple-8%2F15-orange) ![Aprobado](https://img.shields.io/badge/Aprobado-NO-red)
+
+**Calidad de servicios (heurístico):** índice **5/100** · cumple **8/15** · aprobado **NO** · capas **3**
+`SEC 0 · SQL 0 · DBG 20 · duplicación 16.3% · vistas 22 · tests 0`
+<!-- calidad:fin -->
+
 # 🚆 BusYahu - Plataforma Global de Reserva de Pasajes
 > **Trabajo Final Integrador - Programación 3**  
 > **Nivel:** 5to Año - Educación Técnica en Informática  
