@@ -9,20 +9,26 @@
     Booking, 
     Passenger, 
     ProjectIssue, 
-    Destination 
+    Destination,
+    User
   } from './types';
   import TrainSearchView from './components/TrainSearchView.svelte';
   import SeatSelectionCheckoutView from './components/SeatSelectionCheckoutView.svelte';
   import TicketConfirmationView from './components/TicketConfirmationView.svelte';
   import MyBookingsView from './components/MyBookingsView.svelte';
   import ProjectManagementView from './components/ProjectManagementView.svelte';
+  import AuthModal from './components/AuthModal.svelte';
   import { 
     Train, 
     Ticket, 
     Search, 
-    Compass,
-    Layers,
-    X
+    Compass, 
+    Layers, 
+    User as UserIcon,
+    LogOut,
+    ShieldCheck,
+    CreditCard,
+    Mail
   } from 'lucide-svelte';
 
   // Navigation tab state - Default is SEARCH (Client Travel Portal)
@@ -30,6 +36,23 @@
 
   // Academic / Project Documentation Drawer State
   let isDocsDrawerOpen = $state(false);
+
+  // User Authentication State (Local, NO Firebase)
+  let currentUser = $state<User | null>(null);
+  let isAuthModalOpen = $state(false);
+  let isUserMenuOpen = $state(false);
+
+  // Read stored user on start
+  $effect(() => {
+    try {
+      const stored = localStorage.getItem('busyahu_user');
+      if (stored) {
+        currentUser = JSON.parse(stored);
+      }
+    } catch (e) {
+      // Ignored
+    }
+  });
 
   // Core application data state
   let destinations = $state<Destination[]>(INITIAL_DESTINATIONS);
@@ -84,11 +107,14 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleConfirmBooking(passengers: Passenger[], totalPrice: number) {
+  function handleConfirmBooking(passengers: Passenger[], totalPrice: number, contactEmail?: string) {
     if (!selectedTrain) return;
 
-    const dest = destinations.find((d) => d.country.toLowerCase() === selectedTrain.country.toLowerCase());
+    const dest = destinations.find((d) => d.country.toLowerCase() === selectedTrain?.country.toLowerCase());
     const currency = dest ? dest.currency : 'EUR';
+
+    // Auto-fill registered user's email if logged in
+    const targetEmail = currentUser?.email || contactEmail || 'viajero@busyahurail.com';
 
     const newBooking: Booking = {
       id: `BK-${Date.now()}`,
@@ -101,13 +127,21 @@
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       status: 'confirmed',
       qrPayload: `BUSYAHU-TICKET:${selectedTrain.trainNumber}:${passengers[0]?.fullName}:${selectedTrain.fromCity}-${selectedTrain.toCity}`,
-      userEmail: 'viajero@busyahurail.com',
+      userEmail: targetEmail,
+      userId: currentUser?.id,
+      userDni: currentUser?.dni || passengers[0]?.passportId,
     };
 
     bookings = [newBooking, ...bookings];
     activeBooking = newBooking;
     currentView = 'confirmation';
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleLogout() {
+    localStorage.removeItem('busyahu_user');
+    currentUser = null;
+    isUserMenuOpen = false;
   }
 
   function handleCancelBooking(bookingId: string) {
@@ -130,10 +164,12 @@
 </script>
 
 <div class="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-  <!-- CONSUMER TOP NAVBAR: 3-Zone Clean Header -->
+  <!-- ============================================================== -->
+  <!-- CONSUMER TOP NAVBAR: 3-Zone Clean Header                       -->
+  <!-- ============================================================== -->
   <header class="bg-slate-950 text-white border-b border-slate-800/80 sticky top-0 z-40 backdrop-blur-md bg-slate-950/95">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
-      <!-- Zone 1: Brand Element -->
+      <!-- Zone 1: Single Brand Element -->
       <button
         onclick={() => (currentView = 'search')}
         class="flex items-center gap-2.5 text-left group"
@@ -187,31 +223,96 @@
             </span>
           {/if}
         </button>
+
+        <button
+          onclick={() => {
+            if (currentUser) {
+              currentView = 'my_bookings';
+            } else {
+              isAuthModalOpen = true;
+            }
+          }}
+          class="px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5 {currentUser ? 'text-emerald-300 hover:bg-slate-800/60' : 'text-amber-300 hover:text-amber-200 hover:bg-slate-800/60'}"
+        >
+          <UserIcon class="w-4 h-4" />
+          <span>{currentUser ? 'Mi Cuenta' : 'Acceso / Registro'}</span>
+          {#if !currentUser}
+            <span class="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] px-1.5 py-0.5 rounded-md uppercase font-black">
+              10 Min
+            </span>
+          {/if}
+        </button>
       </nav>
 
-      <!-- Zone 3: Actions & Academic Trigger -->
+      <!-- Zone 3: Actions, User Profile & Academic Trigger -->
       <div class="flex items-center gap-2 sm:gap-3">
         <select
           bind:value={selectedCurrency}
-          class="bg-slate-800/80 border border-slate-700 text-slate-200 text-xs font-bold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          class="hidden sm:block bg-slate-800/80 border border-slate-700 text-slate-200 text-xs font-bold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         >
           <option value="EUR">€ EUR</option>
           <option value="USD">$ USD</option>
           <option value="GBP">£ GBP</option>
         </select>
 
-        <button
-          onclick={() => (currentView = 'my_bookings')}
-          class="md:hidden p-2 rounded-lg bg-slate-800 text-slate-200 hover:text-white relative"
-          title="Mis Billetes"
-        >
-          <Ticket class="w-4 h-4" />
-          {#if confirmedBookingsCount > 0}
-            <span class="absolute -top-1 -right-1 bg-amber-400 text-slate-950 font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center">
-              {confirmedBookingsCount}
-            </span>
-          {/if}
-        </button>
+        <!-- User Profile / Auth Button (Local System, NO Firebase) -->
+        {#if currentUser}
+          <div class="relative">
+            <button
+              onclick={() => (isUserMenuOpen = !isUserMenuOpen)}
+              class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-indigo-500/50 rounded-xl text-xs font-bold text-white flex items-center gap-2 transition-colors shadow-sm"
+            >
+              <div class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center font-bold">
+                {currentUser.firstName ? currentUser.firstName[0].toUpperCase() : 'U'}
+              </div>
+              <span class="max-w-[110px] truncate">{currentUser.name}</span>
+              <span class="hidden sm:inline text-[10px] font-mono text-indigo-300 bg-indigo-950/80 px-1.5 py-0.2 rounded border border-indigo-800">
+                DNI: {currentUser.dni}
+              </span>
+            </button>
+
+            {#if isUserMenuOpen}
+              <div class="absolute right-0 mt-2 w-56 bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 text-xs space-y-1">
+                <div class="p-2 border-b border-slate-100">
+                  <div class="font-bold text-slate-900 text-sm truncate">{currentUser.name}</div>
+                  <div class="text-slate-500 font-mono text-[11px] truncate flex items-center gap-1 mt-0.5">
+                    <Mail class="w-3 h-3 text-indigo-500" /> {currentUser.email}
+                  </div>
+                  <div class="text-emerald-700 font-bold text-[10px] mt-1 flex items-center gap-1">
+                    <ShieldCheck class="w-3.5 h-3.5" /> Correo Verificado
+                  </div>
+                </div>
+
+                <button
+                  onclick={() => {
+                    currentView = 'my_bookings';
+                    isUserMenuOpen = false;
+                  }}
+                  class="w-full p-2 text-left hover:bg-slate-100 rounded-xl font-semibold flex items-center gap-2 text-slate-700"
+                >
+                  <Ticket class="w-4 h-4 text-indigo-600" />
+                  <span>Mis Billetes Registrados</span>
+                </button>
+
+                <button
+                  onclick={handleLogout}
+                  class="w-full p-2 text-left hover:bg-rose-50 text-rose-700 rounded-xl font-bold flex items-center gap-2"
+                >
+                  <LogOut class="w-4 h-4" />
+                  <span>Cerrar Sesión</span>
+                </button>
+              </div>
+            {/if}
+          </div>
+        {:else}
+          <button
+            onclick={() => (isAuthModalOpen = true)}
+            class="px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-black rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-1.5 border border-indigo-400/40 ring-2 ring-indigo-500/20 active:scale-95"
+          >
+            <UserIcon class="w-3.5 h-3.5 text-amber-300" />
+            <span>Iniciar Sesión / Registro</span>
+          </button>
+        {/if}
 
         <button
           onclick={() => (isDocsDrawerOpen = true)}
@@ -225,84 +326,112 @@
     </div>
   </header>
 
-  <!-- MAIN BODY -->
+  <!-- Account Top CTA Strip for Visitors -->
+  {#if !currentUser}
+    <div class="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-950 text-slate-200 border-b border-indigo-900/60 text-xs py-2 px-4 shadow-inner">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2 text-xs">
+          <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400/20 text-amber-300 font-bold text-xs">
+            ★
+          </span>
+          <span>
+            <strong class="text-white">Sistema de Usuarios:</strong> Regístrate con tu <strong>Nombre, Apellido, DNI, Correo y Contraseña</strong> (código de 6 dígitos que vence en 10 min) para asociar y consultar tus billetes.
+          </span>
+        </div>
+        <button
+          onclick={() => (isAuthModalOpen = true)}
+          class="px-3.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black rounded-lg shadow transition-colors flex items-center gap-1.5 shrink-0"
+        >
+          <UserIcon class="w-3.5 h-3.5" />
+          <span>Crear Cuenta / Iniciar Sesión</span>
+        </button>
+      </div>
+    </div>
+  {/if}
+
+  <!-- ============================================================== -->
+  <!-- MAIN BODY                                                      -->
+  <!-- ============================================================== -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
     {#if currentView === 'search'}
       <TrainSearchView
         {destinations}
         {trains}
         {activeBackend}
+        {currentUser}
         onSelectTrain={handleSelectTrain}
         onToggleBackend={(b) => (activeBackend = b)}
         onOpenProjectDocs={() => (isDocsDrawerOpen = true)}
+        onOpenAuthModal={() => (isAuthModalOpen = true)}
       />
-    {:else}
-      {#if currentView === 'seat_selection' && selectedTrain}
-        <SeatSelectionCheckoutView
-          train={selectedTrain}
-          travelDate={selectedTravelDate}
-          passengerCount={selectedPassengerCount}
-          initialClass={selectedClassPreference}
-          onBack={() => (currentView = 'search')}
-          onConfirmBooking={handleConfirmBooking}
-          currencySymbol={destinations.find((d) => d.country.toLowerCase() === selectedTrain?.country.toLowerCase())?.currencySymbol || '€'}
-          currency={destinations.find((d) => d.country.toLowerCase() === selectedTrain?.country.toLowerCase())?.currency || 'EUR'}
-        />
-      {:else}
-        {#if currentView === 'confirmation' && activeBooking}
-          <TicketConfirmationView
-            booking={activeBooking}
-            onBackToSearch={() => (currentView = 'search')}
-            onGoToMyBookings={() => (currentView = 'my_bookings')}
-          />
-        {:else}
-          {#if currentView === 'my_bookings'}
-            <MyBookingsView
-              {bookings}
-              onCancelBooking={handleCancelBooking}
-              onViewTicket={handleViewTicket}
-              onGoToSearch={() => (currentView = 'search')}
-            />
-          {/if}
-        {/if}
-      {/if}
+    {:else if currentView === 'seat_selection' && selectedTrain}
+      <SeatSelectionCheckoutView
+        train={selectedTrain}
+        travelDate={selectedTravelDate}
+        passengerCount={selectedPassengerCount}
+        initialClass={selectedClassPreference}
+        {currentUser}
+        onBack={() => (currentView = 'search')}
+        onConfirmBooking={handleConfirmBooking}
+        currencySymbol={destinations.find((d) => d.country.toLowerCase() === selectedTrain?.country.toLowerCase())?.currencySymbol || '€'}
+        currency={destinations.find((d) => d.country.toLowerCase() === selectedTrain?.country.toLowerCase())?.currency || 'EUR'}
+      />
+    {:else if currentView === 'confirmation' && activeBooking}
+      <TicketConfirmationView
+        booking={activeBooking}
+        onBackToSearch={() => (currentView = 'search')}
+        onGoToMyBookings={() => (currentView = 'my_bookings')}
+      />
+    {:else if currentView === 'my_bookings'}
+      <MyBookingsView
+        {bookings}
+        {currentUser}
+        onOpenAuthModal={() => (isAuthModalOpen = true)}
+        onCancelBooking={handleCancelBooking}
+        onViewTicket={handleViewTicket}
+        onGoToSearch={() => (currentView = 'search')}
+      />
     {/if}
   </main>
 
-  <!-- ACADEMIC SPECIFICATIONS DRAWER MODAL -->
+  <!-- Auth Modal (Login / Register / 10-Minute Verification Code) -->
+  <AuthModal
+    isOpen={isAuthModalOpen}
+    onClose={() => (isAuthModalOpen = false)}
+    onLoginSuccess={(user) => {
+      currentUser = user;
+      isAuthModalOpen = false;
+    }}
+  />
+
+  <!-- Academic Drawer -->
   {#if isDocsDrawerOpen}
-    <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex justify-end">
-      <div class="bg-white w-full max-w-4xl min-h-screen shadow-2xl flex flex-col">
-        <div class="bg-slate-900 text-white p-6 flex items-center justify-between border-b border-slate-800 sticky top-0 z-20">
-          <div class="flex items-center gap-3">
-            <div class="p-2 bg-indigo-600 rounded-xl text-white">
-              <Layers class="w-5 h-5" />
-            </div>
-            <div>
-              <h3 class="text-base font-black text-white">
-                Ficha Técnica del Proyecto Final · Programación 3
-              </h3>
-              <p class="text-xs text-slate-400">
-                Seguimiento de 12 Issues, Conventional Commits y Arquitectura Docker
-              </p>
-            </div>
-          </div>
+    <ProjectManagementView
+      {issues}
+      onUpdateIssueStatus={handleUpdateIssueStatus}
+      onClose={() => (isDocsDrawerOpen = false)}
+    />
+  {/if}
 
-          <button
-            onclick={() => (isDocsDrawerOpen = false)}
-            class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors"
-          >
-            <X class="w-5 h-5" />
-          </button>
-        </div>
+  <!-- Footer -->
+  <footer class="bg-slate-950 text-slate-400 border-t border-slate-800 text-xs py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <Train class="w-4 h-4 text-indigo-500" />
+        <span class="font-bold text-white">BusYahu Rail</span>
+        <span>· Sistema Oficial de Billetes Ferroviarios de Alta Velocidad</span>
+      </div>
 
-        <div class="p-6 overflow-y-auto flex-1">
-          <ProjectManagementView
-            {issues}
-            onUpdateIssueStatus={handleUpdateIssueStatus}
-          />
-        </div>
+      <div class="flex items-center gap-4">
+        <button
+          onclick={() => (isDocsDrawerOpen = true)}
+          class="text-indigo-400 hover:text-indigo-300 font-semibold"
+        >
+          Ficha Técnica del Proyecto (12 Issues)
+        </button>
+        <span>·</span>
+        <span>© 2026 Programación 3</span>
       </div>
     </div>
-  {/if}
+  </footer>
 </div>

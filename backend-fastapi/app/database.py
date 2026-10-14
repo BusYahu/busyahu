@@ -31,16 +31,23 @@ async def seed_initial_data_if_empty(db: AsyncIOMotorDatabase):
 
 async def connect_to_mongo():
     logger.info("Conectando a MongoDB...")
-    db_instance.client = AsyncIOMotorClient(settings.MONGO_URI)
-    db_instance.db = db_instance.client[settings.DATABASE_NAME]
-    logger.info(f"Conectado exitosamente a MongoDB base de datos: '{settings.DATABASE_NAME}'")
-    await seed_initial_data_if_empty(db_instance.db)
+    try:
+        db_instance.client = AsyncIOMotorClient(settings.MONGO_URI, serverSelectionTimeoutMS=4000)
+        db_instance.db = db_instance.client[settings.DATABASE_NAME]
+        logger.info(f"Conectado exitosamente a MongoDB base de datos: '{settings.DATABASE_NAME}'")
+        await seed_initial_data_if_empty(db_instance.db)
+    except Exception as e:
+        logger.warning(f"Aviso de conexión inicial a MongoDB ({settings.MONGO_URI}): {e}")
+        logger.info("El servidor continuará ejecutándose. Se reintentará la conexión en las solicitudes.")
 
 async def close_mongo_connection():
     if db_instance.client:
-        logger.info("Cerrando conexión con MongoDB...")
-        db_instance.client.close()
-        logger.info("Conexión con MongoDB cerrada.")
+        try:
+            logger.info("Cerrando conexión con MongoDB...")
+            db_instance.client.close()
+            logger.info("Conexión con MongoDB cerrada.")
+        except Exception:
+            pass
 
 def get_database() -> AsyncIOMotorDatabase:
     if db_instance.db is None:

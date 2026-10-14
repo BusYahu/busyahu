@@ -2925,6 +2925,24 @@
 │   │       └── qr.py
 │   ├── Dockerfile
 │   └── requirements.txt
+├── busyahu
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── public
+│   │   ├── favicon.svg
+│   │   └── icons.svg
+│   ├── README.md
+│   ├── src
+│   │   ├── App.css
+│   │   ├── App.jsx
+│   │   ├── assets
+│   │   │   ├── hero.png
+│   │   │   ├── react.svg
+│   │   │   └── vite.svg
+│   │   ├── index.css
+│   │   └── main.jsx
+│   └── vite.config.js
 ├── database
 │   └── mongo-init.js
 ├── docker-compose.yml
@@ -10637,7 +10655,16 @@
 │   ├── package-lock.json
 │   ├── src
 │   │   ├── App.tsx
-│   │   └── main.tsx
+│   │   ├── components
+│   │   │   ├── CountrySelector.tsx
+│   │   │   ├── ETicketModal.tsx
+│   │   │   ├── MyBookings.tsx
+│   │   │   ├── Navbar.tsx
+│   │   │   └── SeatMap.tsx
+│   │   ├── index.css
+│   │   ├── main.tsx
+│   │   ├── mockData.ts
+│   │   └── types.ts
 │   ├── tsconfig.json
 │   └── vite.config.ts
 ├── frontend-svelte
@@ -17625,6 +17652,7 @@
 │   │   ├── app.css
 │   │   ├── App.svelte
 │   │   ├── components
+│   │   │   ├── AuthModal.svelte
 │   │   │   ├── MyBookingsView.svelte
 │   │   │   ├── ProjectManagementView.svelte
 │   │   │   ├── SeatSelectionCheckoutView.svelte
@@ -21490,4 +21518,4 @@
 ├── stop.sh
 └── tsconfig.json
 
-1780 directories, 19711 files
+1785 directories, 19734 files
