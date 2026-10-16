@@ -12,6 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+COPY test_smtp.py .
 
 ENV PORT=8000
 ENV PYTHONUNBUFFERED=1

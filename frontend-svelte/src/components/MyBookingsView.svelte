@@ -19,6 +19,37 @@
   let { bookings = [], onCancelBooking, onViewTicket, onGoToSearch }: Props = $props();
 
   let cancellingId = $state<string | null>(null);
+  let qrMap = $state<Record<string, string>>({});
+
+  // Genera/obtiene un QR funcional real (el mismo backend que envia el correo)
+  $effect(() => {
+    for (const booking of bookings) {
+      if (booking.qrCode || qrMap[booking.id]) continue;
+      const payload = booking.qrPayload || booking.bookingCode;
+      (async () => {
+        const endpoints = [
+          '/api/bookings/qr',
+          'http://localhost:8000/api/bookings/qr'
+        ];
+        for (const ep of endpoints) {
+          try {
+            const res = await fetch(ep, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ data: payload })
+            });
+            if (res.ok) {
+              const d = await res.json();
+              if (d?.qrCode) {
+                qrMap[booking.id] = d.qrCode;
+              }
+              break;
+            }
+          } catch {}
+        }
+      })();
+    }
+  });
 </script>
 
 <div id="my-bookings-view" class="max-w-5xl mx-auto space-y-6 pb-16">
@@ -129,6 +160,26 @@
                   {p.fullName} <strong class="text-indigo-600 font-mono">(Asiento {p.seatId})</strong>
                 </span>
               {/each}
+            </div>
+          </div>
+
+          <!-- QR preview -->
+          <div class="mt-3 flex items-center gap-3">
+            {@const qrSrc = booking.qrCode || qrMap[booking.id]}
+            {#if qrSrc}
+              <img
+                src={qrSrc}
+                alt="QR de acceso"
+                class="w-24 h-24 rounded-xl border border-slate-200 bg-white p-2 shadow-sm object-contain"
+              />
+            {:else}
+              <div class="w-24 h-24 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-400 text-[10px] font-semibold">
+                Generando QR...
+              </div>
+            {/if}
+            <div class="text-[11px] text-slate-500 space-y-0.5">
+              <div class="font-semibold text-slate-700">QR de torniquete</div>
+              <div class="font-mono truncate max-w-[220px]">{booking.qrPayload || booking.bookingCode}</div>
             </div>
           </div>
 

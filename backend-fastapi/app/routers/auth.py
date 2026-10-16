@@ -19,10 +19,18 @@ from app.schemas.user import (
 )
 
 try:
-    from app.utils.email_service import send_verification_email
+    from app.utils.email_service import (
+        send_verification_email,
+        get_smtp_info,
+        is_smtp_configured
+    )
 except Exception:
     def send_verification_email(recipient: str, code: str, first_name: str = "Viajero"):
         return {"success": True, "configured": False, "code": code}
+    def get_smtp_info():
+        return {"configured": False, "message": "SMTP no disponible"}
+    def is_smtp_configured():
+        return False
 
 router = APIRouter(prefix="/api/auth", tags=["Autenticación"])
 
@@ -41,7 +49,14 @@ async def register_request(user_data: UserRegisterRequest):
     pending_collection = get_pending_collection()
     email_clean = user_data.email.lower().strip()
 
-    existing_user = await users_collection.find_one({"email": email_clean})
+    try:
+        existing_user = await users_collection.find_one({"email": email_clean})
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error de base de datos ({e}). Verifica que MONGO_URI incluya credenciales y authSource=admin."
+        )
+
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -53,17 +68,27 @@ async def register_request(user_data: UserRegisterRequest):
     expires_at = now + timedelta(minutes=10)
 
     hashed_pwd = get_password_hash(user_data.password)
-    full_name = f"{user_data.firstName.strip()} {user_data.lastName.strip()}".strip()
+    first_name = (user_data.firstName or "").strip()
+    last_name = (user_data.lastName or "").strip()
+    full_name = (user_data.name or "").strip()
+    if not full_name:
+        full_name = f"{first_name} {last_name}".strip() or "Viajero"
+    if not first_name:
+        parts = full_name.split(" ", 1)
+        first_name = parts[0]
+        last_name = parts[1] if len(parts) > 1 else ""
+
+    dni_val = (user_data.dni or "").strip()
 
     pending_doc = {
         "email": email_clean,
         "code": code,
-        "firstName": user_data.firstName.strip(),
-        "lastName": user_data.lastName.strip(),
+        "firstName": first_name,
+        "lastName": last_name,
         "name": full_name,
-        "dni": user_data.dni.strip(),
+        "dni": dni_val,
         "passwordHash": hashed_pwd,
-        "role": user_data.role or "client",
+        "role": user_data.role or "user",
         "createdAt": now,
         "expiresAt": expires_at
     }
@@ -74,7 +99,14 @@ async def register_request(user_data: UserRegisterRequest):
         upsert=True
     )
 
-    email_res = send_verification_email(email_clean, code, user_data.firstName)
+    email_res = send_verification_email(email_clean, code, first_name)
+
+    if not email_res.get("success"):
+        err_detail = email_res.get("error") or email_res.get("message") or "Error desconocido al enviar correo"
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"No se pudo enviar el correo de verificación a {email_clean}: {err_detail}"
+        )
 
     return VerificationPendingResponse(
         success=True,
@@ -181,13 +213,38 @@ async def resend_code(request: ResendCodeRequest):
     first_name = pending.get("firstName", "Viajero")
     email_res = send_verification_email(email_clean, new_code, first_name)
 
+    if not email_res.get("success"):
+        err_msg = email_res.get("error") or email_res.get("message") or "Error al reenviar correo por SMTP"
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"No se pudo reenviar el correo a {email_clean}: {err_msg}"
+        )
+
     return VerificationPendingResponse(
         success=True,
         email=email_clean,
-        message="Se ha generado un nuevo código de verificación válido por 10 minutos.",
+        message="Se ha reenviado un nuevo código de verificación a tu correo (válido 10 minutos).",
         expiresInMinutes=10,
         debugCode=new_code if not email_res.get("configured") else None
     )
+
+@router.get("/smtp-status", tags=["Autenticación"])
+async def get_auth_smtp_status():
+    """Retorna información sobre la configuración y estado del servidor de correos SMTP."""
+    return get_smtp_info()
+
+@router.post("/test-email", tags=["Autenticación"])
+async def trigger_test_email(request: ResendCodeRequest):
+    """Envía un código de prueba y devuelve el resultado detallado para verificar SMTP."""
+    test_code = f"{random.randint(100000, 999999)}"
+    res = send_verification_email(request.email, test_code, "Usuario de Prueba")
+    return {
+        "success": res.get("success", False),
+        "configured": res.get("configured", False),
+        "result": res,
+        "testCode": test_code,
+        "recipient": request.email
+    }
 
 @router.post("/register", response_model=VerificationPendingResponse)
 async def register(user_data: UserRegisterRequest):

@@ -26,6 +26,29 @@
   let targetEmail = $state(booking.userEmail || 'viajero@busyahurail.com');
   let emailStatus = $state<'idle' | 'sending' | 'sent' | 'not_configured' | 'error'>('idle');
   let statusMessage = $state('');
+  let qrImage = $state(booking?.qrCode || '');
+  // Mantener el QR sincronizado si el prop cambia o si se genero despues de crear la reserva
+  $effect(() => { if (booking?.qrCode) qrImage = booking.qrCode; });
+  $effect(() => {
+    if (!qrImage && booking?.qrPayload) {
+      (async () => {
+        const endpoints = [
+          '/api/bookings/qr',
+          'http://localhost:8000/api/bookings/qr'
+        ];
+        for (const ep of endpoints) {
+          try {
+            const res = await fetch(ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: booking.qrPayload }) });
+            if (res.ok) {
+              const d = await res.json();
+              if (d?.qrCode) { qrImage = d.qrCode; booking.qrCode = d.qrCode; }
+              break;
+            }
+          } catch {}
+        }
+      })();
+    }
+  });
 
   async function sendEmail(emailToSend: string) {
     if (!emailToSend || !emailToSend.includes('@')) {
@@ -66,6 +89,10 @@
           if (data.success) {
             emailStatus = 'sent';
             statusMessage = `¡Billete enviado con éxito a ${emailToSend}! Revisa tu bandeja de entrada o spam.`;
+            if (data.qrCode) {
+              qrImage = data.qrCode;
+              booking.qrCode = data.qrCode;
+            }
             success = true;
             break;
           } else if (data.configured === false || (data.message && data.message.includes('configur'))) {
@@ -303,20 +330,20 @@
         <!-- QR Code -->
         <div class="sm:col-span-4 bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center space-y-2">
           <div class="w-28 h-28 bg-white p-2 border border-slate-300 rounded-xl shadow-inner flex items-center justify-center">
+            {#if qrImage}
+            <img src={qrImage} alt="Codigo QR de acceso" class="w-full h-full object-contain" />
+          {:else}
             <svg viewBox="0 0 100 100" class="w-full h-full text-slate-950">
               <rect width="100" height="100" fill="white" />
               <rect x="5" y="5" width="25" height="25" fill="black" />
               <rect x="9" y="9" width="17" height="17" fill="white" />
               <rect x="13" y="13" width="9" height="9" fill="black" />
-
               <rect x="70" y="5" width="25" height="25" fill="black" />
               <rect x="74" y="9" width="17" height="17" fill="white" />
               <rect x="78" y="13" width="9" height="9" fill="black" />
-
               <rect x="5" y="70" width="25" height="25" fill="black" />
               <rect x="9" y="74" width="17" height="17" fill="white" />
               <rect x="13" y="78" width="9" height="9" fill="black" />
-
               <rect x="35" y="10" width="10" height="10" fill="black" />
               <rect x="50" y="15" width="12" height="6" fill="black" />
               <rect x="35" y="35" width="30" height="8" fill="black" />
@@ -326,6 +353,7 @@
               <rect x="80" y="75" width="12" height="12" fill="black" />
               <rect x="35" y="75" width="20" height="10" fill="black" />
             </svg>
+          {/if}
           </div>
           <div class="text-[10px] font-mono font-bold text-slate-600 uppercase">
             Escanear en Torno

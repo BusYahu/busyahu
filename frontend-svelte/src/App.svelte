@@ -116,6 +116,8 @@
     // Auto-fill registered user's email if logged in
     const targetEmail = currentUser?.email || contactEmail || 'viajero@busyahurail.com';
 
+    const qrPayload = `BUSYAHU-TICKET:${selectedTrain.trainNumber}:${passengers[0]?.fullName}:${selectedTrain.fromCity}-${selectedTrain.toCity}`;
+
     const newBooking: Booking = {
       id: `BK-${Date.now()}`,
       bookingCode: `RW-${selectedTrain.country.substring(0, 2).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -126,7 +128,8 @@
       currency,
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       status: 'confirmed',
-      qrPayload: `BUSYAHU-TICKET:${selectedTrain.trainNumber}:${passengers[0]?.fullName}:${selectedTrain.fromCity}-${selectedTrain.toCity}`,
+      qrPayload,
+      qrCode: '',
       userEmail: targetEmail,
       userId: currentUser?.id,
       userDni: currentUser?.dni || passengers[0]?.passportId,
@@ -136,6 +139,34 @@
     activeBooking = newBooking;
     currentView = 'confirmation';
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Generar el QR funcional real desde el backend (si está disponible)
+    (async () => {
+      const endpoints = [
+        '/api/bookings/qr',
+        'http://localhost:8000/api/bookings/qr'
+      ];
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: qrPayload })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.qrCode) {
+              newBooking.qrCode = data.qrCode;
+              activeBooking = { ...newBooking, qrCode: data.qrCode };
+              bookings = bookings.map((b) => (b.id === newBooking.id ? { ...b, qrCode: data.qrCode } : b));
+            }
+            break;
+          }
+        } catch {
+          // Ignorar: el billete se crea de todas formas
+        }
+      }
+    })();
   }
 
   function handleLogout() {

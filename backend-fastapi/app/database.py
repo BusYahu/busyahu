@@ -34,11 +34,16 @@ async def connect_to_mongo():
     try:
         db_instance.client = AsyncIOMotorClient(settings.MONGO_URI, serverSelectionTimeoutMS=4000)
         db_instance.db = db_instance.client[settings.DATABASE_NAME]
-        logger.info(f"Conectado exitosamente a MongoDB base de datos: '{settings.DATABASE_NAME}'")
+        # Validar credenciales de acceso de inmediato
+        await db_instance.client.admin.command('ping')
+        logger.info(f"Conectado y autenticado exitosamente en MongoDB base de datos: '{settings.DATABASE_NAME}'")
         await seed_initial_data_if_empty(db_instance.db)
     except Exception as e:
-        logger.warning(f"Aviso de conexión inicial a MongoDB ({settings.MONGO_URI}): {e}")
-        logger.info("El servidor continuará ejecutándose. Se reintentará la conexión en las solicitudes.")
+        logger.error(f"Error de autenticación o conexión a MongoDB: {e}")
+        logger.warning(
+            "Verifica que MONGO_URI incluya usuario y contraseña con authSource=admin "
+            "(ej. mongodb://admin:secretpassword@mongo:27017/railworld_db?authSource=admin)"
+        )
 
 async def close_mongo_connection():
     if db_instance.client:

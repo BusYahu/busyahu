@@ -1,4 +1,5 @@
 import random
+import base64
 from datetime import datetime, timezone
 from typing import List
 from bson import ObjectId
@@ -14,6 +15,7 @@ from app.schemas.booking import (
     PassengerItem
 )
 from app.utils.qr import generate_qr_base64
+from app.utils.ticket_pdf import build_ticket_pdf
 
 router = APIRouter(prefix="/api/bookings", tags=["Reservas"])
 
@@ -193,6 +195,119 @@ async def get_my_bookings(current_user: UserResponse = Depends(get_current_user)
         bookings.append(doc_to_booking_response(doc))
 
     return bookings
+
+
+@router.post("/qr", summary="Genera un codigo QR Base64 para un payload")
+async def generate_qr(payload: dict):
+    """Devuelve un codigo QR (data URL base64) funcional para cualquier texto/payload."""
+    data = ""
+    if isinstance(payload, dict):
+        data = (
+            payload.get("data")
+            or payload.get("payload")
+            or payload.get("qrPayload")
+            or payload.get("qr_payload")
+            or payload.get("bookingCode")
+            or payload.get("booking_code")
+            or ""
+        )
+    if not data:
+        data = "BUSYAHU-RAIL"
+    return {"success": True, "qrCode": generate_qr_base64(str(data))}
+
+
+@router.post("/send-direct-email", summary="Envia el billete (PDF con QR) por correo")
+@router.post("/send-ticket", summary="Alias de envio de billete por correo")
+async def send_direct_email(payload: dict):
+    """Genera el PDF del comprobante con QR y lo envía por correo SMTP."""
+    booking = {}
+    if isinstance(payload, dict):
+        booking = payload.get("booking") or payload.get("ticket") or payload
+
+    if not isinstance(booking, dict):
+        booking = {}
+
+    recipient = ""
+    if isinstance(payload, dict):
+        recipient = (
+            payload.get("recipientEmail")
+            or payload.get("to")
+            or payload.get("email")
+            or booking.get("userEmail")
+            or booking.get("user_email")
+            or ""
+        )
+    recipient = str(recipient).strip()
+
+    booking_code = (
+        booking.get("bookingCode")
+        or booking.get("booking_code")
+        or booking.get("bookingCode")
+        or "N/A"
+    )
+
+    qr_code = booking.get("qrCode") or booking.get("qr_code")
+    train = booking.get("train") or {}
+    qr_payload = (
+        booking.get("qrPayload")
+        or booking.get("qr_payload")
+        or f"RAILWORLD-VERIFIED:{booking_code}:{train.get('trainNumber') or train.get('code') or ''}:{(booking.get('passengers') or [{}])[0].get('fullName','') if booking.get('passengers') else ''}"
+    )
+
+    qr_png_bytes = None
+    if isinstance(qr_code, str) and qr_code.startswith("data:image"):
+        try:
+            qr_png_bytes = base64.b64decode(qr_code.split(",", 1)[1])
+        except Exception:
+            qr_png_bytes = None
+
+    if qr_png_bytes is None:
+        generated = generate_qr_base64(str(qr_payload))
+        if isinstance(generated, str) and generated.startswith("data:image"):
+            try:
+                qr_png_bytes = base64.b64decode(generated.split(",", 1)[1])
+            except Exception:
+                qr_png_bytes = None
+
+    try:
+        pdf_bytes = build_ticket_pdf(booking, qr_png_bytes)
+    except Exception as e:
+        return {"success": False, "configured": True, "message": f"No se pudo generar el PDF: {e}", "qrCode": qr_code}
+
+    html_body = f"""
+    <div style="font-family:sans-serif;padding:16px;">
+      <h2>BusYahu Rail - Tu billete</h2>
+      <p>Adjuntamos el comprobante en PDF con el codigo QR de acceso al tren.</p>
+      <p><strong>Localizador:</strong> {booking_code}</p>
+      <p><strong>Fecha de viaje:</strong> {booking.get('travelDate') or booking.get('date') or ''}</p>
+      <div style="margin:16px 0;text-align:center;">
+        <img src="cid:qrimage" alt="QR de acceso" style="width:160px;height:160px;border:1px solid #ddd;padding:8px;" />
+      </div>
+    </div>
+    """
+    text_body = f"BusYahu Rail - Tu billete\nLocalizador: {booking_code}\nAdjuntamos el PDF con el QR."
+
+    from app.utils.email_service import send_ticket_email
+    res = send_ticket_email(
+        recipient=recipient,
+        subject=f"BusYahu - Billete {booking_code}",
+        text_body=text_body,
+        html_body=html_body,
+        pdf_bytes=pdf_bytes,
+        pdf_filename=f"billete_{booking_code}.pdf",
+        qr_png_bytes=qr_png_bytes,
+    )
+
+    qr_response = qr_code
+    if not (isinstance(qr_response, str) and qr_response.startswith("data:image")) and qr_png_bytes:
+        qr_response = "data:image/png;base64," + base64.b64encode(qr_png_bytes).decode("utf-8")
+
+    return {
+        "success": res.get("success", False),
+        "configured": res.get("configured", False),
+        "message": res.get("message") or res.get("error") or "",
+        "qrCode": qr_response,
+    }
 
 
 @router.get(
