@@ -1,8 +1,8 @@
 <!-- calidad:inicio -->
-![Calidad](https://img.shields.io/badge/Calidad-5%2F100-red) ![Cumple](https://img.shields.io/badge/Cumple-8%2F15-orange) ![Aprobado](https://img.shields.io/badge/Aprobado-NO-red)
+![Calidad](https://img.shields.io/badge/Calidad-5%2F100-red) ![Aprobado](https://img.shields.io/badge/Aprobado-NO-red) ![Cumple](https://img.shields.io/badge/Cumple-8%2F15-orange) ![Duplicación](https://img.shields.io/badge/Duplicaci%C3%B3n-16.3%25-yellow) ![SEC](https://img.shields.io/badge/SEC-0-green) ![SQL](https://img.shields.io/badge/SQL-0-green) ![DBG](https://img.shields.io/badge/DBG-20-red) ![Capas](https://img.shields.io/badge/Capas-3-green) ![Tests](https://img.shields.io/badge/Tests-0-red) ![Vistas](https://img.shields.io/badge/Vistas-22-green)
 
 **Calidad de servicios (heurístico):** índice **5/100** · cumple **8/15** · aprobado **NO** · capas **3**
-`SEC 0 · SQL 0 · DBG 20 · duplicación 16.3% · vistas 22 · tests 0`
+Detalle completo en [`docs/EVALUACION.md`](docs/EVALUACION.md).
 <!-- calidad:fin -->
 
 # 🚆 BusYahu - Plataforma Global de Reserva de Pasajes
