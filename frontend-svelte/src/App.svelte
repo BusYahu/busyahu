@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { 
     INITIAL_DESTINATIONS, 
     INITIAL_TRAIN_ROUTES, 
@@ -40,6 +41,67 @@
   // User Authentication State (Local, NO Firebase)
   let currentUser = $state<User | null>(null);
   let isAuthModalOpen = $state(false);
+  let isCreateRouteOpen = $state(false);
+  let routeCode = $state('');
+  let routeName = $state('');
+  let routeType = $state('Alta Velocidad');
+  let routeCountry = $state('ES');
+  let routeOrigin = $state('ES-MAD');
+  let routeDestination = $state('ES-BCN');
+  let routeDeparture = $state('08:30');
+  let routeArrival = $state('11:45');
+  let routeDuration = $state('3h 15m');
+  let routePrice = $state(65.5);
+  let routeStatusMsg = $state<string | null>(null);
+  let routeLoading = $state(false);
+
+  async function handleCreateRoute(e: Event) {
+    e.preventDefault();
+    routeStatusMsg = null;
+    routeLoading = true;
+    try {
+      const stored = localStorage.getItem('busyahu_user');
+      const token = stored ? JSON.parse(stored).token : null;
+      const endpoints = ['/api/trains', 'http://localhost:8000/api/trains'];
+      let ok = false;
+      let msg = '';
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({
+              code: routeCode.trim(),
+              name: routeName.trim(),
+              type: routeType.trim(),
+              countryCode: routeCountry.trim().toUpperCase(),
+              originStationId: routeOrigin.trim(),
+              destinationStationId: routeDestination.trim(),
+              departureTime: routeDeparture.trim(),
+              arrivalTime: routeArrival.trim(),
+              duration: routeDuration.trim(),
+              basePrice: Number(routePrice)
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) { ok = true; msg = data.message || 'Ruta creada exitosamente.'; break; }
+          else { msg = data.detail || data.message || 'Error al crear la ruta.'; }
+        } catch {}
+      }
+      routeStatusMsg = msg || (ok ? 'Ruta creada.' : 'No se pudo conectar con el servidor.');
+      if (ok) {
+        isCreateRouteOpen = false;
+        routeCode = ''; routeName = '';
+      }
+    } catch (err: any) {
+      routeStatusMsg = err?.message || 'Error inesperado.';
+    } finally {
+      routeLoading = false;
+    }
+  }
   let isUserMenuOpen = $state(false);
 
   // Read stored user on start
@@ -57,6 +119,53 @@
   // Core application data state
   let destinations = $state<Destination[]>(INITIAL_DESTINATIONS);
   let trains = $state<TrainRoute[]>(INITIAL_TRAIN_ROUTES);
+
+  onMount(async () => {
+    try {
+      const destRes = await fetch('/api/destinations');
+      const stationMap: Record<string, { city: string; station: string; country: string; countryCode: string; currency: string; currencySymbol: string }> = {};
+      if (destRes.ok) {
+        const destData = await destRes.json();
+        for (const d of (destData.destinations || [])) {
+          for (const s of (d.stations || [])) {
+            stationMap[s.id] = { city: s.city, station: s.name, country: d.countryName, countryCode: d.countryCode, currency: d.currency, currencySymbol: d.symbol };
+          }
+        }
+      }
+      const trainRes = await fetch('/api/trains/search');
+      if (trainRes.ok) {
+        const trainData = await trainRes.json();
+        const existingCodes = new Set(trains.map((t) => t.trainNumber));
+        const mapped: TrainRoute[] = (trainData.trains || [])
+          .filter((t: any) => !existingCodes.has(t.code))
+          .map((t: any) => {
+            const from = stationMap[t.originStationId] || {};
+            const to = stationMap[t.destinationStationId] || {};
+            return {
+              id: t.id,
+              trainNumber: t.code,
+              operator: t.name || '',
+              country: from.country || '',
+              countryCode: from.countryCode || t.countryCode || '',
+              fromCity: from.city || t.originStationId,
+              fromStation: from.station || t.originStationId,
+              toCity: to.city || t.destinationStationId,
+              toStation: to.station || t.destinationStationId,
+              departureTime: t.departureTime,
+              arrivalTime: t.arrivalTime,
+              duration: t.duration,
+              basePrice: t.basePrice,
+              carriagesCount: t.carriagesCount,
+            } as TrainRoute;
+          });
+        if (mapped.length) {
+          trains = [...mapped, ...trains];
+        }
+      }
+    } catch {
+      // Mantener datos mock si el backend no está disponible
+    }
+  });
   let issues = $state<ProjectIssue[]>(INITIAL_ISSUES);
   let bookings = $state<Booking[]>([
     {
@@ -353,6 +462,16 @@
           <Layers class="w-3.5 h-3.5 text-indigo-400" />
           <span class="hidden sm:inline">Ficha Técnica</span>
         </button>
+
+        {#if currentUser?.email?.toLowerCase() === 'v.dilello@alumno.etec.um.edu.ar'}
+          <button
+            onclick={() => (isCreateRouteOpen = true)}
+            class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold rounded-lg border border-emerald-500 transition-colors flex items-center gap-1.5"
+            title="Crear nueva ruta/tren (solo usuario autorizado)"
+          >
+            <span>➕ Crear Ruta</span>
+          </button>
+        {/if}
       </div>
     </div>
   </header>
@@ -434,6 +553,77 @@
       isAuthModalOpen = false;
     }}
   />
+
+  <!-- Modal Crear Ruta (solo usuario autorizado) -->
+  {#if isCreateRouteOpen}
+    <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden relative">
+        <div class="bg-slate-950 text-white p-6 relative">
+          <button onclick={() => (isCreateRouteOpen = false)} class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition-colors">
+            ✕
+          </button>
+          <h2 class="text-xl font-black text-white">Crear Nueva Ruta</h2>
+          <p class="text-xs text-slate-400 mt-1">Solo disponible para el usuario autorizado.</p>
+        </div>
+        <form onsubmit={handleCreateRoute} class="p-6 space-y-3">
+          {#if routeStatusMsg}
+            <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-800 text-xs font-bold">{routeStatusMsg}</div>
+          {/if}
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Código</label>
+              <input bind:value={routeCode} required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs" placeholder="AVE-999" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Nombre</label>
+              <input bind:value={routeName} required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs" placeholder="Tren de prueba" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Tipo</label>
+              <input bind:value={routeType} class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">País (ISO)</label>
+              <input bind:value={routeCountry} required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs" placeholder="ES" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Origen (station id)</label>
+              <input bind:value={routeOrigin} required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs" placeholder="ES-MAD" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Destino (station id)</label>
+              <input bind:value={routeDestination} required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs" placeholder="ES-BCN" />
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Salida</label>
+              <input bind:value={routeDeparture} class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Llegada</label>
+              <input bind:value={routeArrival} class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Duración</label>
+              <input bind:value={routeDuration} class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Precio base</label>
+            <input type="number" step="0.01" bind:value={routePrice} class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs" />
+          </div>
+          <button type="submit" disabled={routeLoading} class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 text-white font-black text-xs rounded-xl shadow-md transition-all">
+            {routeLoading ? 'Creando...' : 'Crear Ruta'}
+          </button>
+        </form>
+      </div>
+    </div>
+  {/if}
 
   <!-- Academic Drawer -->
   {#if isDocsDrawerOpen}

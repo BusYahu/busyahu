@@ -135,19 +135,21 @@
       const stored = localStorage.getItem('busyahu_user');
       const token = stored ? JSON.parse(stored).token : null;
       const endpoints = [
-        `/api/bookings/${booking.id}/wallet`,
-        `http://localhost:8000/api/bookings/${booking.id}/wallet`
+        `/api/bookings/generate-wallet`,
+        `http://localhost:8000/api/bookings/generate-wallet`
       ];
       let data: any = null;
       for (const ep of endpoints) {
         try {
           const res = await fetch(ep, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
-            },
-            body: JSON.stringify({ platform })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              booking,
+              platform,
+              originCity: booking?.train?.fromCity,
+              destinationCity: booking?.train?.toCity
+            })
           });
           if (res.ok) {
             data = await res.json();
@@ -156,7 +158,11 @@
         } catch {}
       }
       if (data && data.success) {
-        walletMessage = 'Pass de Wallet generado y enviado a tu correo.';
+        let msg = 'Pass de Wallet generado y enviado a tu correo.';
+        if (data.featuredActionsIncluded === false) {
+          msg += ' (Los botones "Go to Location"/"Book a Stay" requieren plan Pro en WalletWallet; se omitieron.)';
+        }
+        walletMessage = msg;
         const url = platform === 'google' ? data.googleSaveUrl : (data.shareUrl || data.googleSaveUrl);
         if (url) {
           window.open(url, '_blank');
@@ -171,8 +177,45 @@
     }
   }
 
-  function handlePrint() {
-    window.print();
+  async function handlePrint() {
+    try {
+      const stored = localStorage.getItem('busyahu_user');
+      const token = stored ? JSON.parse(stored).token : null;
+      const endpoints = [
+        `/api/bookings/generate-pdf`,
+        `http://localhost:8000/api/bookings/generate-pdf`
+      ];
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify(booking)
+          });
+          if (res.ok) {
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const win = window.open(url, '_blank');
+            if (!win) {
+              // Fallback: descargar
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `billete_${booking.bookingCode}.pdf`;
+              a.click();
+            }
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+            return;
+          }
+        } catch {}
+      }
+      // Fallback si no hay PDF
+      window.print();
+    } catch {
+      window.print();
+    }
   }
 </script>
 

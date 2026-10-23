@@ -6,7 +6,8 @@
     QrCode, 
     CheckCircle2,
     Ticket,
-    ArrowRight
+    ArrowRight,
+    Clock
   } from 'lucide-svelte';
 
   interface Props {
@@ -20,6 +21,25 @@
 
   let cancellingId = $state<string | null>(null);
   let qrMap = $state<Record<string, string>>({});
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // Ordena: primero los billetes vigentes, luego los vencidos/cancelados.
+  // Dentro de cada grupo, por fecha de viaje descendente.
+  let sortedBookings = $derived(
+    [...bookings].sort((a, b) => {
+      const aCancelled = a.status === 'cancelled';
+      const bCancelled = b.status === 'cancelled';
+      const aExpired = !aCancelled && ((a.travelDate || a.date || '') < todayStr);
+      const bExpired = !bCancelled && ((b.travelDate || b.date || '') < todayStr);
+      const aActive = !aCancelled && !aExpired;
+      const bActive = !bCancelled && !bExpired;
+      if (aActive !== bActive) return aActive ? -1 : 1;
+      const da = a.travelDate || a.date || '';
+      const db = b.travelDate || b.date || '';
+      return db.localeCompare(da);
+    })
+  );
 
   // Genera/obtiene un QR funcional real (el mismo backend que envia el correo)
   $effect(() => {
@@ -96,13 +116,14 @@
     </div>
   {:else}
     <div class="space-y-4">
-      {#each bookings as booking (booking.id)}
+      {#each sortedBookings as booking (booking.id)}
         {@const isCancelled = booking.status === 'cancelled'}
+        {@const isExpired = !isCancelled && ((booking.travelDate || booking.date || '') < todayStr)}
         {@const isConfirmingCancel = cancellingId === booking.id}
         {@const qrSrc = booking.qrCode || qrMap[booking.id]}
 
         <div
-          class="bg-white border rounded-2xl p-5 sm:p-6 shadow-sm transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-6 {isCancelled ? 'border-slate-200 bg-slate-50/70 opacity-70' : 'border-slate-200 hover:border-slate-300'}"
+          class="bg-white border rounded-2xl p-5 sm:p-6 shadow-sm transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-6 {isCancelled || isExpired ? 'border-slate-200 bg-slate-50/70 opacity-70' : 'border-slate-200 hover:border-slate-300'}"
         >
           <!-- Route details -->
           <div class="space-y-3 flex-1">
@@ -120,6 +141,10 @@
               {#if isCancelled}
                 <span class="text-[11px] bg-rose-50 text-rose-700 border border-rose-200 font-bold px-2 py-0.5 rounded-md">
                   Cancelado (Asiento Liberado)
+                </span>
+              {:else if isExpired}
+                <span class="text-[11px] bg-amber-50 text-amber-700 border border-amber-200 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                  <Clock class="w-3.5 h-3.5" /> Vencido
                 </span>
               {:else}
                 <span class="text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
@@ -202,8 +227,9 @@
                   <span>Ver Billete & QR</span>
                 </button>
 
-                {#if isConfirmingCancel}
-                  <div class="flex items-center gap-1">
+                {#if !isExpired}
+                  {#if isConfirmingCancel}
+                    <div class="flex items-center gap-1">
                     <button
                       onclick={() => {
                         onCancelBooking(booking.id);
@@ -230,6 +256,7 @@
                     <span>Anular</span>
                   </button>
                 {/if}
+              {/if}
               {/if}
             </div>
           </div>

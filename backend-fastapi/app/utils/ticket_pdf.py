@@ -4,6 +4,7 @@ Generación de un comprobante PDF de la reserva (con código QR de acceso).
 Usa FPDF2 (dependencia ligera) que se añade en requirements.txt.
 """
 import io
+import os
 from datetime import datetime
 
 
@@ -84,10 +85,18 @@ def build_ticket_pdf(booking: dict, qr_png_bytes: bytes = None) -> bytes:
         pdf.ln(4)
         pdf.set_font("Helvetica", "B", 10)
         pdf.cell(0, 6, _clean("Codigo QR de acceso"), new_x="LMARGIN", new_y="NEXT")
+        y = pdf.get_y()
+        x_qr = pdf.l_margin
         img_stream = io.BytesIO(qr_png_bytes)
-        pdf.image(img_stream, w=45)
+        pdf.image(img_stream, x=x_qr, y=y, w=45)
 
-    # QR payload textual para verificacion manual/fallback
+        # Logo morado a la derecha del QR
+        logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo_morado.png")
+        if os.path.exists(logo_path):
+            pdf.image(logo_path, x=x_qr + 55, y=y, w=45)
+
+        pdf.ln(50)
+
     qr_payload = booking.get("qrPayload") or booking.get("qr_payload")
     if qr_payload:
         pdf.ln(2)

@@ -47,7 +47,7 @@
   let selectedCountryId = $state<string>('es');
   let fromCity = $state<string>('Madrid');
   let toCity = $state<string>('Barcelona');
-  let travelDate = $state<string>('2026-09-15');
+  let travelDate = $state<string>(new Date().toISOString().slice(0, 10));
   let passengerCount = $state<number>(1);
   let selectedClassTier = $state<'tourist' | 'first' | 'business'>('tourist');
   let timeFilter = $state<'all' | 'morning' | 'afternoon' | 'evening'>('all');
@@ -278,6 +278,7 @@
               <input
                 id="travelDate"
                 type="date"
+                min={new Date().toISOString().slice(0, 10)}
                 bind:value={travelDate}
                 class="w-full pl-9 pr-2 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
               />
