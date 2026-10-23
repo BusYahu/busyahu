@@ -99,6 +99,7 @@
       {#each bookings as booking (booking.id)}
         {@const isCancelled = booking.status === 'cancelled'}
         {@const isConfirmingCancel = cancellingId === booking.id}
+        {@const qrSrc = booking.qrCode || qrMap[booking.id]}
 
         <div
           class="bg-white border rounded-2xl p-5 sm:p-6 shadow-sm transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-6 {isCancelled ? 'border-slate-200 bg-slate-50/70 opacity-70' : 'border-slate-200 hover:border-slate-300'}"
@@ -165,7 +166,6 @@
 
           <!-- QR preview -->
           <div class="mt-3 flex items-center gap-3">
-            {@const qrSrc = booking.qrCode || qrMap[booking.id]}
             {#if qrSrc}
               <img
                 src={qrSrc}

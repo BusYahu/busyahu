@@ -1,6 +1,18 @@
 import os
 from pydantic_settings import BaseSettings
 
+try:
+    from app.secrets import get_smtp_credentials as _get_smtp_creds
+    _FALLBACK_SMTP_USER, _FALLBACK_SMTP_PASSWORD = _get_smtp_creds()
+except Exception:
+    _FALLBACK_SMTP_USER, _FALLBACK_SMTP_PASSWORD = "", ""
+
+try:
+    from app.secrets import get_wallet_api_key as _get_wallet_key
+    _FALLBACK_WALLET_API_KEY = _get_wallet_key()
+except Exception:
+    _FALLBACK_WALLET_API_KEY = ""
+
 def _get_int(key: str, default: int) -> int:
     val = os.getenv(key)
     if val is not None and val.strip().isdigit():
@@ -49,16 +61,21 @@ class Settings(BaseSettings):
     CORS_ORIGIN: str = os.getenv("CORS_ORIGIN", "*")
 
     # Configuracion de Servidor de Correo (SMTP / Gmail / Outlook)
-    SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com").strip() or "smtp.gmail.com"
     SMTP_PORT: int = _get_int("SMTP_PORT", 587)
-    SMTP_USER: str = os.getenv("SMTP_USER", os.getenv("EMAIL_USER", "")).strip()
-    SMTP_PASSWORD: str = os.getenv(
+    _env_smtp_user = os.getenv("SMTP_USER", os.getenv("EMAIL_USER", "")).strip()
+    SMTP_USER: str = _env_smtp_user or _FALLBACK_SMTP_USER
+    _env_smtp_password = os.getenv(
         "SMTP_PASSWORD", 
         os.getenv("SMTP_PASS", os.getenv("EMAIL_APP_PASSWORD", os.getenv("EMAIL_PASS", "")))
     ).strip()
-    SMTP_FROM_NAME: str = os.getenv("SMTP_FROM_NAME", "BusYahu Rail")
-    SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "")
+    SMTP_PASSWORD: str = _env_smtp_password or _FALLBACK_SMTP_PASSWORD
+    SMTP_FROM_NAME: str = os.getenv("SMTP_FROM_NAME", "BusYahu Rail").strip() or "BusYahu Rail"
+    SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "").strip()
     SMTP_USE_TLS: bool = os.getenv("SMTP_USE_TLS", "true").lower() in ("true", "1", "yes")
+
+    # WalletWallet API (generación de passes para Apple/Google Wallet)
+    WALLETWALLET_API_KEY: str = os.getenv("WALLETWALLET_API_KEY", "").strip() or _FALLBACK_WALLET_API_KEY
 
     class Config:
         case_sensitive = True

@@ -28,6 +28,14 @@ except Exception:
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
     smtp_user = os.getenv("SMTP_USER", os.getenv("EMAIL_USER", "")).strip()
     smtp_password = os.getenv("SMTP_PASSWORD", os.getenv("SMTP_PASS", os.getenv("EMAIL_APP_PASSWORD", os.getenv("EMAIL_PASS", "")))).strip()
+    if not smtp_user or not smtp_password:
+        try:
+            from app.secrets import get_smtp_credentials
+            fb_user, fb_pass = get_smtp_credentials()
+            smtp_user = smtp_user or fb_user
+            smtp_password = smtp_password or fb_pass
+        except Exception:
+            pass
     smtp_from_name = os.getenv("SMTP_FROM_NAME", "BusYahu Rail")
     smtp_use_tls = os.getenv("SMTP_USE_TLS", "true").lower() in ("true", "1", "yes")
 

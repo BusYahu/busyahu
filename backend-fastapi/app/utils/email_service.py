@@ -186,13 +186,10 @@ def send_verification_email(recipient: str, code: str, first_name: str = "Viajer
 
     server = None
     try:
-        # Conectividad/DNS rápida
-        socket.create_connection((smtp_host, smtp_port), timeout=10).close()
-
         if smtp_port == 465:
-            server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15)
+            server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10)
         else:
-            server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
+            server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
             if use_tls:
                 server.starttls()
 
@@ -232,6 +229,8 @@ def send_ticket_email(
     pdf_bytes: bytes = None,
     pdf_filename: str = "comprobante_busyahu.pdf",
     qr_png_bytes: bytes = None,
+    wallet_bytes: bytes = None,
+    wallet_filename: str = "pasaje_wallet.pkpass",
 ) -> dict:
     """Envía el billete/PDF de reserva por correo, adjuntando el PDF con QR."""
     recipient = (recipient or "").strip()
@@ -280,14 +279,19 @@ def send_ticket_email(
         qr_part.add_header("Content-Disposition", "inline", filename="qr_acceso.png")
         msg.attach(qr_part)
 
+    if wallet_bytes:
+        w_part = MIMEBase("application", "octet-stream")
+        w_part.set_payload(wallet_bytes)
+        encoders.encode_base64(w_part)
+        w_part.add_header("Content-Disposition", "attachment", filename=wallet_filename)
+        msg.attach(w_part)
+
     server = None
     try:
-        import socket
-        socket.create_connection((smtp_host, smtp_port), timeout=10).close()
         if smtp_port == 465:
-            server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15)
+            server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10)
         else:
-            server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
+            server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
             if use_tls:
                 server.starttls()
         server.login(smtp_user, smtp_password)

@@ -27,6 +27,8 @@
   let emailStatus = $state<'idle' | 'sending' | 'sent' | 'not_configured' | 'error'>('idle');
   let statusMessage = $state('');
   let qrImage = $state(booking?.qrCode || '');
+  let walletLoading = $state(false);
+  let walletMessage = $state<string | null>(null);
   // Mantener el QR sincronizado si el prop cambia o si se genero despues de crear la reserva
   $effect(() => { if (booking?.qrCode) qrImage = booking.qrCode; });
   $effect(() => {
@@ -125,6 +127,49 @@
       sendEmail(booking.userEmail);
     }
   });
+
+  async function generateWallet(platform: 'google' | 'apple') {
+    walletLoading = true;
+    walletMessage = null;
+    try {
+      const stored = localStorage.getItem('busyahu_user');
+      const token = stored ? JSON.parse(stored).token : null;
+      const endpoints = [
+        `/api/bookings/${booking.id}/wallet`,
+        `http://localhost:8000/api/bookings/${booking.id}/wallet`
+      ];
+      let data: any = null;
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({ platform })
+          });
+          if (res.ok) {
+            data = await res.json();
+            break;
+          }
+        } catch {}
+      }
+      if (data && data.success) {
+        walletMessage = 'Pass de Wallet generado y enviado a tu correo.';
+        const url = platform === 'google' ? data.googleSaveUrl : (data.shareUrl || data.googleSaveUrl);
+        if (url) {
+          window.open(url, '_blank');
+        }
+      } else {
+        walletMessage = data?.message || 'No se pudo generar el pass de Wallet.';
+      }
+    } catch (e: any) {
+      walletMessage = e?.message || 'Error al generar el pass de Wallet.';
+    } finally {
+      walletLoading = false;
+    }
+  }
 
   function handlePrint() {
     window.print();
@@ -378,6 +423,37 @@
         <span>Billete Nominativo Verificado</span>
       </div>
     </div>
+  </div>
+
+  <!-- Wallet buttons -->
+  {#if walletMessage}
+    <div class="flex items-center justify-center">
+      <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">{walletMessage}</span>
+    </div>
+  {/if}
+  <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 print:hidden">
+    <button
+      onclick={() => generateWallet('google')}
+      disabled={walletLoading}
+      class="w-full sm:w-auto px-5 py-2.5 bg-black hover:bg-slate-800 disabled:bg-slate-400 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+    >
+      {#if walletLoading}
+        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+      {:else}
+        <span>💳 Añadir a Google Wallet</span>
+      {/if}
+    </button>
+    <button
+      onclick={() => generateWallet('apple')}
+      disabled={walletLoading}
+      class="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-slate-700 disabled:bg-slate-400 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+    >
+      {#if walletLoading}
+        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+      {:else}
+        <span>🍎 Añadir a Apple Wallet</span>
+      {/if}
+    </button>
   </div>
 
   <!-- Actions -->

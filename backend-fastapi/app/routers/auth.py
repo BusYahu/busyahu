@@ -100,14 +100,14 @@ async def register_request(user_data: UserRegisterRequest):
     )
 
     email_res = send_verification_email(email_clean, code, first_name)
-
+ 
     if not email_res.get("success"):
         err_detail = email_res.get("error") or email_res.get("message") or "Error desconocido al enviar correo"
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"No se pudo enviar el correo de verificación a {email_clean}: {err_detail}"
         )
-
+ 
     return VerificationPendingResponse(
         success=True,
         email=email_clean,
@@ -212,14 +212,14 @@ async def resend_code(request: ResendCodeRequest):
 
     first_name = pending.get("firstName", "Viajero")
     email_res = send_verification_email(email_clean, new_code, first_name)
-
+ 
     if not email_res.get("success"):
         err_msg = email_res.get("error") or email_res.get("message") or "Error al reenviar correo por SMTP"
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"No se pudo reenviar el correo a {email_clean}: {err_msg}"
         )
-
+ 
     return VerificationPendingResponse(
         success=True,
         email=email_clean,
