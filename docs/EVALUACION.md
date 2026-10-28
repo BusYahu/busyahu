@@ -11,12 +11,13 @@
 |---|---|
 | Tipo de proyecto | frontend |
 | Índice de calidad de servicios | **5/100** (mínimo 60) |
-| Criterios cumplidos | **8/15** |
+| Criterios cumplidos | **9/15** |
 | Aprobado (semáforo) | **NO** |
 | Código (LOC) | 7,924 |
 | Archivos de código | 63 |
+| Tests (archivos) | 0 |
+| Cobertura de líneas | no medible (mínimo 80%) |
 | Capas detectadas | vistas, servicios, estado |
-| Tope por duplicación | `DUP>=15%` → índice ≤ 50 |
 
 > **Aprobado** exige cumplir **todos** los criterios del semáforo. No es una nota: sirve para ordenar y priorizar la revisión.
 
@@ -54,15 +55,11 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
     - ¿El índice bajó por muchas señales chicas o por una o dos graves?
     - ¿Se revisó el código integrado después de unir el trabajo de cada integrante?
 
-### 2. Duplicación (DRY) (duplicacion) — A REVISAR
+### 2. Duplicación (DRY) (duplicacion) — OK
 
 - **Qué mide:** Porcentaje de bloques de código repetidos (similitud) en el repositorio.
 - **Por qué importa:** Cada copia se mantiene por separado: un arreglo hay que repetirlo y los defectos se multiplican.
-- **Tu resultado:** **16.3%** de duplicación _(máximo 15%)_
-- **Para investigar la causa:**
-    - ¿El trabajo se repartió por pantallas o archivos y se integró copiando y pegando bloques?
-    - ¿Qué zonas del sistema cambiaron juntas más de una vez (señal de lógica compartida)?
-    - ¿Hubo un lugar común acordado para la lógica repetida antes de empezar, o cada integrante resolvió lo suyo?
+- **Tu resultado:** **13.1%** de duplicación _(máximo 15%)_
 
 ### 3. Secretos hardcodeados (SEC) — OK
 
@@ -146,15 +143,15 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
     - ¿El acceso a datos ocurre desde lugares que no son los responsables?
     - ¿Se puede cambiar una parte sin tocar las demás?
 
-### 14. Tests automatizados (Tests) — A REVISAR
+### 14. Cobertura de tests (Cob) — A REVISAR
 
-- **Qué mide:** Cantidad de archivos de test separados del código.
-- **Por qué importa:** Sin tests no hay red de seguridad: un cambio puede romper algo sin que se note hasta la demo.
-- **Tu resultado:** **0** archivo(s) de test _(mínimo 5)_
+- **Qué mide:** Porcentaje de líneas de código ejecutadas por la suite de tests (cobertura real, no cantidad de archivos de test).
+- **Por qué importa:** Un test que existe pero no ejecuta el código no protege de nada: la cobertura muestra qué partes quedan sin verificar.
+- **Tu resultado:** **no medible** (sin tests, sin runner o sin artefacto de cobertura) _(mínimo 80% de líneas)_
 - **Para investigar la causa:**
-    - ¿Se planificó escribir tests, o quedó siempre al final?
-    - ¿Qué parte del sistema es más riesgosa de tocar y por qué no está cubierta?
-    - ¿Se sabe qué se rompería si algo cambiara?
+    - ¿Qué módulos o ramas del sistema nunca se ejecutan en los tests?
+    - ¿Los tests prueban el camino principal y los errores, o solo el caso feliz?
+    - ¿La suite se puede correr en CI sin base de datos ni servicios externos?
 
 ### 15. Vistas del frontend (Vistas) — OK
 
@@ -169,12 +166,11 @@ Criterios que hoy están en rojo y qué habría que cambiar para alcanzar el niv
 | Criterio | Resultado actual | Meta | Qué arreglar |
 |---|---|---|---|
 | Índice de calidad de servicios (indice) | índice **5/100** | mínimo 60 | Subir el índice a ≥60 corrigiendo primero las señales de más peso: duplicación, secretos, SQL y capas. |
-| Duplicación (DRY) (duplicacion) | **16.3%** de duplicación | máximo 15% | Unificar los bloques repetidos en un módulo o función compartida; apuntar a ≤15%. |
 | Acceso a datos dentro del componente (HTTP) | **1** llamada(s) a la API dentro de componente(s) | máximo 0 | Mover `fetch`/`axios` a una capa de servicios/API y consumirla desde los componentes; 0 casos. |
 | Depuración olvidada (DBG) | **20** mensaje(s) de depuración olvidado(s) | máximo 0 | Quitar `console.log`/`print`/`debugger` del código de producción; 0 casos. |
 | Componente demasiado grande (BigC) | **14** componente(s) demasiado grande(s) | máximo 1 | Dividir el componente por responsabilidad en subcomponentes; ≤1 componente grande. |
 | Acoplamiento alto (Acop) | **18** unidad(es) con acoplamiento alto | máximo 2 por 1000 LOC | Reducir dependencias directas entre unidades; ≤2 por 1000 LOC. |
-| Tests automatizados (Tests) | **0** archivo(s) de test | mínimo 5 | Agregar tests de los flujos principales hasta llegar a 5 archivos. |
+| Cobertura de tests (Cob) | **no medible** (sin tests, sin runner o sin artefacto de cobertura) | mínimo 80% de líneas | Publicar cobertura (o correr la suite con coverage) y cubrir ≥80% de líneas. |
 
 > Empezá por las señales de seguridad (**SEC**, **SQL**) y por la **duplicación**: son las que más pesan en el índice y las más rápidas de verificar a ojo.
 
