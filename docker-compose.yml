@@ -1,88 +1,118 @@
-version: '3.8'
-
-
 services:
+  # -------------------------------------------------------------
+  # 1. Base de Datos: MongoDB con persistencia y Seed de 11 países
+  # -------------------------------------------------------------
   mongo:
     image: mongo:7.0
-    container_name: busyahu-mongo
+    container_name: railworld_mongo
     restart: always
-    ports:
-      - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-Admin123!}
-      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-busyahu_db}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-secretpassword}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-railworld_db}
+    ports:
+      - "27017:27017"
     volumes:
-      - busyahu_mongo_data:/data/db
+      - mongo_data:/data/db
       - ./database/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 5s
 
+  # -------------------------------------------------------------
+  # 2. Backend 1: Node.js + Express (TypeScript)
+  # -------------------------------------------------------------
   backend-express:
     build:
       context: ./backend-express
       dockerfile: Dockerfile
-    container_name: busyahu-express
+    container_name: railworld_backend_express
     restart: always
-    ports:
-      - "4000:4000"
     environment:
-      PORT: 4000
-      PORT_EXPRESS: 4000
-      MONGO_URI: mongodb://admin:Admin123!@mongo:27017/busyahu_db?authSource=admin
-      MONGO_DB_NAME: busyahu_db
-      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_busyahu_prog3_2026_secure}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      PORT: ${PORT_EXPRESS:-4000}
+      MONGO_URI: ${MONGO_URI:-mongodb://admin:secretpassword@mongo:27017/railworld_db?authSource=admin}
+      DATABASE_NAME: ${MONGO_INITDB_DATABASE:-railworld_db}
+      JWT_SECRET: ${JWT_SECRET:-super_secret_railworld_key_2026}
+      CORS_ORIGIN: "*"
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASSWORD:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-BusYahu Rail}
+    ports:
+      - "${PORT_EXPRESS:-4000}:4000"
     depends_on:
       mongo:
         condition: service_healthy
 
+  # -------------------------------------------------------------
+  # 3. Backend 2: Python + FastAPI
+  # -------------------------------------------------------------
   backend-fastapi:
     build:
       context: ./backend-fastapi
       dockerfile: Dockerfile
-    container_name: busyahu-fastapi
+    container_name: railworld_backend_fastapi
     restart: always
-    ports:
-      - "8000:8000"
     environment:
-      PORT: 8000
-      PORT_FASTAPI: 8000
-      MONGO_URI: mongodb://admin:Admin123!@mongo:27017/busyahu_db?authSource=admin
-      MONGO_DB_NAME: busyahu_db
-      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_busyahu_prog3_2026_secure}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      PORT: ${PORT_FASTAPI:-8000}
+      MONGO_URI: ${MONGO_URI:-mongodb://admin:secretpassword@mongo:27017/railworld_db?authSource=admin}
+      DATABASE_NAME: ${MONGO_INITDB_DATABASE:-railworld_db}
+      JWT_SECRET: ${JWT_SECRET:-super_secret_railworld_key_2026}
+      CORS_ORIGIN: "*"
+      # -------------------------------------------------------------
+      # Configuración de Envío de Correo Real (Gmail / SMTP)
+      # Toma automáticamente los valores de tu archivo .env
+      # -------------------------------------------------------------
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-${EMAIL_USER:-}}
+      SMTP_PASS: ${SMTP_PASS:-${SMTP_PASSWORD:-${EMAIL_PASS:-}}}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-${SMTP_PASS:-${EMAIL_APP_PASSWORD:-}}}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-BusYahu Rail}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+    ports:
+      - "${PORT_FASTAPI:-8000}:8000"
+    volumes:
+      - ./backend-fastapi/app:/app/app
+      - ./backend-fastapi/test_smtp.py:/app/test_smtp.py
     depends_on:
       mongo:
         condition: service_healthy
 
+  # -------------------------------------------------------------
+  # 4. Frontend 1: React 19 + Vite + Tailwind
+  # -------------------------------------------------------------
   frontend-react:
     build:
       context: ./frontend-react
       dockerfile: Dockerfile
-    container_name: busyahu-react
+    container_name: railworld_frontend_react
     restart: always
     ports:
-      - "5173:5173"
+      - "${PORT_REACT:-5173}:80"
     depends_on:
       - backend-express
       - backend-fastapi
 
+  # -------------------------------------------------------------
+  # 5. Frontend 2: Svelte 5 + Vite + Tailwind
+  # -------------------------------------------------------------
   frontend-svelte:
     build:
       context: ./frontend-svelte
       dockerfile: Dockerfile
-    container_name: busyahu-svelte
+    container_name: railworld_frontend_svelte
     restart: always
     ports:
-      - "5174:5174"
+      - "${PORT_SVELTE:-5174}:80"
     depends_on:
       - backend-express
       - backend-fastapi
 
 volumes:
-  busyahu_mongo_data:
+  mongo_data:
+    name: railworld_mongo_volume

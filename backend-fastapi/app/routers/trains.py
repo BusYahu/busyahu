@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
 from typing import Optional
 from bson import ObjectId
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from app.auth import get_current_user
+from app.schemas.user import UserResponse
 from fastapi.responses import JSONResponse
 from app.database import get_trains_collection, get_bookings_collection
 from app.schemas.train import (
@@ -208,3 +210,52 @@ async def get_train_by_id(train_id: str):
         basePrice=float(train.get("basePrice", 0.0)),
         carriages=train.get("carriages") or []
     )
+
+
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear una nueva ruta/tren (solo usuario autorizado)",
+)
+async def create_train(payload: dict, current_user: UserResponse = Depends(get_current_user)):
+    """Crea un nuevo tren en la colección 'trains'. Solo el usuario autorizado o admin."""
+    allowed_email = "v.dilello@alumno.etec.um.edu.ar"
+    if current_user.email.lower().strip() != allowed_email and current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado para crear rutas.")
+
+    trains_collection = get_trains_collection()
+
+    code = (payload.get("code") or "").strip()
+    name = (payload.get("name") or "").strip()
+    country_code = (payload.get("countryCode") or payload.get("country_code") or "").strip().upper()
+    origin = (payload.get("originStationId") or payload.get("origin_station_id") or "").strip()
+    destination = (payload.get("destinationStationId") or payload.get("destination_station_id") or "").strip()
+
+    if not code or not name or not country_code or not origin or not destination:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Faltan campos obligatorios: code, name, countryCode, originStationId, destinationStationId.")
+
+    existing = await trains_collection.find_one({"code": code})
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe un tren con ese código.")
+
+    doc = {
+        "code": code,
+        "name": name,
+        "type": (payload.get("type") or "").strip(),
+        "countryCode": country_code,
+        "originStationId": origin,
+        "destinationStationId": destination,
+        "departureTime": (payload.get("departureTime") or payload.get("departure_time") or "08:30").strip(),
+        "arrivalTime": (payload.get("arrivalTime") or payload.get("arrival_time") or "11:45").strip(),
+        "duration": (payload.get("duration") or "3h 15m").strip(),
+        "basePrice": float(payload.get("basePrice") or payload.get("base_price") or 0.0),
+        "carriages": payload.get("carriages") or [
+            {"carriageNumber": 1, "classType": "Standard", "totalSeats": 20, "rows": 5, "seatsPerRow": 4}
+        ],
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "createdBy": current_user.email,
+    }
+
+    result = await trains_collection.insert_one(doc)
+    doc["_id"] = result.inserted_id
+    return {"success": True, "id": str(result.inserted_id), "code": code, "message": "Ruta creada exitosamente."}

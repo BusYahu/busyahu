@@ -12,14 +12,11 @@ from bson import ObjectId
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 
 from app.config import settings
 from app.database import get_users_collection
 from app.schemas.user import UserResponse
-
-# Contexto de hasheo bcrypt (compatible con salt 10 rounds de bcryptjs en Node.js)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Esquema de seguridad HTTP Bearer
 security = HTTPBearer(auto_error=True)
@@ -27,13 +24,18 @@ security = HTTPBearer(auto_error=True)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifica si la contraseña en texto plano coincide con el hash bcrypt guardado en MongoDB."""
-    # passlib tolera los prefijos $2a$ / $2b$ / $2y$ generados por bcryptjs.
-    return pwd_context.verify(plain_password, hashed_password)
+    # bcrypt (python) tolera los prefijos $2a$ / $2b$ / $2y$ generados por bcryptjs.
+    if not hashed_password:
+        return False
+    try:
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    except Exception:
+        return False
 
 
 def get_password_hash(password: str) -> str:
-    """Genera el hash seguro bcrypt de la contraseña."""
-    return pwd_context.hash(password)
+    """Genera el hash seguro bcrypt de la contraseña (salt 10, compatible con bcryptjs)."""
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=10)).decode("utf-8")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

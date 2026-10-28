@@ -9,7 +9,10 @@
     ShieldCheck,
     ArrowRight,
     Luggage,
-    Ticket
+    Ticket,
+    Mail,
+    Send,
+    AlertCircle
   } from 'lucide-svelte';
 
   interface Props {
@@ -20,12 +23,203 @@
 
   let { booking, onBackToSearch, onGoToMyBookings }: Props = $props();
 
-  function handlePrint() {
-    window.print();
+  let targetEmail = $state(booking.userEmail || 'viajero@busyahurail.com');
+  let emailStatus = $state<'idle' | 'sending' | 'sent' | 'not_configured' | 'error'>('idle');
+  let statusMessage = $state('');
+  let qrImage = $state(booking?.qrCode || '');
+  let walletLoading = $state(false);
+  let walletMessage = $state<string | null>(null);
+  // Mantener el QR sincronizado si el prop cambia o si se genero despues de crear la reserva
+  $effect(() => { if (booking?.qrCode) qrImage = booking.qrCode; });
+  $effect(() => {
+    if (!qrImage && booking?.qrPayload) {
+      (async () => {
+        const endpoints = [
+          '/api/bookings/qr',
+          'http://localhost:8000/api/bookings/qr'
+        ];
+        for (const ep of endpoints) {
+          try {
+            const res = await fetch(ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: booking.qrPayload }) });
+            if (res.ok) {
+              const d = await res.json();
+              if (d?.qrCode) { qrImage = d.qrCode; booking.qrCode = d.qrCode; }
+              break;
+            }
+          } catch {}
+        }
+      })();
+    }
+  });
+
+  async function sendEmail(emailToSend: string) {
+    if (!emailToSend || !emailToSend.includes('@')) {
+      emailStatus = 'error';
+      statusMessage = 'Por favor ingresa una dirección de correo válida.';
+      return;
+    }
+
+    emailStatus = 'sending';
+    statusMessage = `Enviando billete oficial a ${emailToSend}...`;
+
+    const payload = {
+      recipientEmail: emailToSend,
+      to: emailToSend,
+      booking: booking
+    };
+
+    // Probamos primero el proxy /api/ y luego la conexion directa con el backend
+    const endpoints = [
+      '/api/bookings/send-direct-email',
+      'http://localhost:8000/api/bookings/send-direct-email',
+      '/api/send-ticket'
+    ];
+
+    let success = false;
+    let lastMsg = '';
+
+    for (const endpoint of endpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            emailStatus = 'sent';
+            statusMessage = `¡Billete enviado con éxito a ${emailToSend}! Revisa tu bandeja de entrada o spam.`;
+            if (data.qrCode) {
+              qrImage = data.qrCode;
+              booking.qrCode = data.qrCode;
+            }
+            success = true;
+            break;
+          } else if (data.configured === false || (data.message && data.message.includes('configur'))) {
+            emailStatus = 'not_configured';
+            statusMessage = data.message || 'Configuración SMTP pendiente: coloca tu correo y contraseña de aplicación en docker-compose.yml o .env.';
+            success = true;
+            break;
+          } else {
+            lastMsg = data.message || data.error || 'Error al procesar el envío';
+          }
+        }
+      } catch (e) {
+        // Continuamos al siguiente endpoint
+      }
+    }
+
+    if (!success) {
+      if (lastMsg) {
+        emailStatus = 'error';
+        statusMessage = `Error al enviar correo: ${lastMsg}`;
+      } else {
+        emailStatus = 'not_configured';
+        statusMessage = 'Servidor de correo pendiente: coloca tu correo y contraseña de aplicación en docker-compose.yml o .env.';
+      }
+    }
+  }
+
+  $effect(() => {
+    if (booking.userEmail) {
+      sendEmail(booking.userEmail);
+    }
+  });
+
+  async function generateWallet(platform: 'google' | 'apple') {
+    walletLoading = true;
+    walletMessage = null;
+    try {
+      const stored = localStorage.getItem('busyahu_user');
+      const token = stored ? JSON.parse(stored).token : null;
+      const endpoints = [
+        `/api/bookings/generate-wallet`,
+        `http://localhost:8000/api/bookings/generate-wallet`
+      ];
+      let data: any = null;
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              booking,
+              platform,
+              originCity: booking?.train?.fromCity,
+              destinationCity: booking?.train?.toCity
+            })
+          });
+          if (res.ok) {
+            data = await res.json();
+            break;
+          }
+        } catch {}
+      }
+      if (data && data.success) {
+        let msg = 'Pass de Wallet generado y enviado a tu correo.';
+        if (data.featuredActionsIncluded === false) {
+          msg += ' (Los botones "Go to Location"/"Book a Stay" requieren plan Pro en WalletWallet; se omitieron.)';
+        }
+        walletMessage = msg;
+        const url = platform === 'google' ? data.googleSaveUrl : (data.shareUrl || data.googleSaveUrl);
+        if (url) {
+          window.open(url, '_blank');
+        }
+      } else {
+        walletMessage = data?.message || 'No se pudo generar el pass de Wallet.';
+      }
+    } catch (e: any) {
+      walletMessage = e?.message || 'Error al generar el pass de Wallet.';
+    } finally {
+      walletLoading = false;
+    }
+  }
+
+  async function handlePrint() {
+    try {
+      const stored = localStorage.getItem('busyahu_user');
+      const token = stored ? JSON.parse(stored).token : null;
+      const endpoints = [
+        `/api/bookings/generate-pdf`,
+        `http://localhost:8000/api/bookings/generate-pdf`
+      ];
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify(booking)
+          });
+          if (res.ok) {
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const win = window.open(url, '_blank');
+            if (!win) {
+              // Fallback: descargar
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `billete_${booking.bookingCode}.pdf`;
+              a.click();
+            }
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+            return;
+          }
+        } catch {}
+      }
+      // Fallback si no hay PDF
+      window.print();
+    } catch {
+      window.print();
+    }
   }
 </script>
 
-<div id="ticket-confirmation-view" class="max-w-3xl mx-auto space-y-8 pb-16">
+<div id="ticket-confirmation-view" class="max-w-3xl mx-auto space-y-6 pb-16">
   <!-- Top Success Banner -->
   <div class="bg-emerald-50 border border-emerald-200 rounded-3xl p-6 sm:p-8 text-center space-y-3 shadow-sm">
     <div class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-md">
@@ -35,10 +229,71 @@
       ¡Reserva Confirmada y Billete Emitido!
     </h2>
     <p class="text-xs sm:text-sm text-emerald-800 max-w-lg mx-auto">
-      Hemos enviado una copia a <strong class="text-emerald-950 font-semibold">{booking.userEmail}</strong>. Guarda tu código localizador:
+      Localizador de reserva oficial:
     </p>
     <div class="inline-block bg-white px-4 py-2 rounded-xl border border-emerald-300 font-mono text-base font-black text-emerald-900 shadow-sm tracking-widest">
       {booking.bookingCode}
+    </div>
+  </div>
+
+  <!-- Real Email Dispatch Status Widget -->
+  <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3 print:hidden">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <Mail class="w-5 h-5 text-indigo-600" />
+        <h3 class="text-sm font-bold text-slate-900">Envío de Billete por Correo Electrónico</h3>
+      </div>
+      {#if emailStatus === 'sent'}
+        <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+          <CheckCircle2 class="w-3.5 h-3.5" /> Enviado
+        </span>
+      {:else if emailStatus === 'sending'}
+        <span class="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200 flex items-center gap-1">
+          <div class="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div> Enviando...
+        </span>
+      {:else if emailStatus === 'not_configured'}
+        <span class="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+          <AlertCircle class="w-3.5 h-3.5 text-amber-600" /> Pendiente de credenciales
+        </span>
+      {/if}
+    </div>
+
+    {#if statusMessage}
+      <div class="p-3 rounded-xl text-xs flex items-start gap-2.5 {emailStatus === 'sent' ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' : emailStatus === 'not_configured' ? 'bg-amber-50 text-amber-900 border border-amber-200' : emailStatus === 'error' ? 'bg-rose-50 text-rose-900 border border-rose-200' : 'bg-indigo-50 text-indigo-900 border border-indigo-200'}">
+        {#if emailStatus === 'sent'}
+          <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+        {:else if emailStatus === 'not_configured'}
+          <AlertCircle class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+        {:else}
+          <Mail class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+        {/if}
+        <div class="flex-1 leading-relaxed">
+          <span>{statusMessage}</span>
+          {#if emailStatus === 'not_configured'}
+            <div class="mt-1 text-[11px] text-amber-800 font-normal">
+              💡 Configura <code>SMTP_USER</code> (tu correo) y <code>SMTP_PASSWORD</code> (tu contraseña de aplicación de 16 caracteres) en <code>docker-compose.yml</code> o en <code>.env</code>.
+            </div>
+          {/if}
+        </div>
+      </div>
+    {/if}
+
+    <!-- Resend Input -->
+    <div class="flex gap-2 pt-1">
+      <input
+        type="email"
+        bind:value={targetEmail}
+        placeholder="Introduce tu dirección de correo"
+        class="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500"
+      />
+      <button
+        onclick={() => sendEmail(targetEmail)}
+        disabled={emailStatus === 'sending'}
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white font-bold text-xs rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+      >
+        <Send class="w-3.5 h-3.5" />
+        <span>Enviar Billete</span>
+      </button>
     </div>
   </div>
 
@@ -163,20 +418,20 @@
         <!-- QR Code -->
         <div class="sm:col-span-4 bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center space-y-2">
           <div class="w-28 h-28 bg-white p-2 border border-slate-300 rounded-xl shadow-inner flex items-center justify-center">
+            {#if qrImage}
+            <img src={qrImage} alt="Codigo QR de acceso" class="w-full h-full object-contain" />
+          {:else}
             <svg viewBox="0 0 100 100" class="w-full h-full text-slate-950">
               <rect width="100" height="100" fill="white" />
               <rect x="5" y="5" width="25" height="25" fill="black" />
               <rect x="9" y="9" width="17" height="17" fill="white" />
               <rect x="13" y="13" width="9" height="9" fill="black" />
-
               <rect x="70" y="5" width="25" height="25" fill="black" />
               <rect x="74" y="9" width="17" height="17" fill="white" />
               <rect x="78" y="13" width="9" height="9" fill="black" />
-
               <rect x="5" y="70" width="25" height="25" fill="black" />
               <rect x="9" y="74" width="17" height="17" fill="white" />
               <rect x="13" y="78" width="9" height="9" fill="black" />
-
               <rect x="35" y="10" width="10" height="10" fill="black" />
               <rect x="50" y="15" width="12" height="6" fill="black" />
               <rect x="35" y="35" width="30" height="8" fill="black" />
@@ -186,6 +441,7 @@
               <rect x="80" y="75" width="12" height="12" fill="black" />
               <rect x="35" y="75" width="20" height="10" fill="black" />
             </svg>
+          {/if}
           </div>
           <div class="text-[10px] font-mono font-bold text-slate-600 uppercase">
             Escanear en Torno
@@ -210,6 +466,37 @@
         <span>Billete Nominativo Verificado</span>
       </div>
     </div>
+  </div>
+
+  <!-- Wallet buttons -->
+  {#if walletMessage}
+    <div class="flex items-center justify-center">
+      <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">{walletMessage}</span>
+    </div>
+  {/if}
+  <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 print:hidden">
+    <button
+      onclick={() => generateWallet('google')}
+      disabled={walletLoading}
+      class="w-full sm:w-auto px-5 py-2.5 bg-black hover:bg-slate-800 disabled:bg-slate-400 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+    >
+      {#if walletLoading}
+        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+      {:else}
+        <span>💳 Añadir a Google Wallet</span>
+      {/if}
+    </button>
+    <button
+      onclick={() => generateWallet('apple')}
+      disabled={walletLoading}
+      class="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-slate-700 disabled:bg-slate-400 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+    >
+      {#if walletLoading}
+        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+      {:else}
+        <span>🍎 Añadir a Apple Wallet</span>
+      {/if}
+    </button>
   </div>
 
   <!-- Actions -->

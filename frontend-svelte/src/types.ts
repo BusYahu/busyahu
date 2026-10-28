@@ -60,6 +60,7 @@ export interface Booking {
   createdAt: string;
   status: 'confirmed' | 'cancelled';
   qrPayload: string;
+  qrCode?: string;
   userEmail: string;
 }
 

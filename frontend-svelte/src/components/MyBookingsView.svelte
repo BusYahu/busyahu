@@ -6,7 +6,8 @@
     QrCode, 
     CheckCircle2,
     Ticket,
-    ArrowRight
+    ArrowRight,
+    Clock
   } from 'lucide-svelte';
 
   interface Props {
@@ -19,6 +20,56 @@
   let { bookings = [], onCancelBooking, onViewTicket, onGoToSearch }: Props = $props();
 
   let cancellingId = $state<string | null>(null);
+  let qrMap = $state<Record<string, string>>({});
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // Ordena: primero los billetes vigentes, luego los vencidos/cancelados.
+  // Dentro de cada grupo, por fecha de viaje descendente.
+  let sortedBookings = $derived(
+    [...bookings].sort((a, b) => {
+      const aCancelled = a.status === 'cancelled';
+      const bCancelled = b.status === 'cancelled';
+      const aExpired = !aCancelled && ((a.travelDate || a.date || '') < todayStr);
+      const bExpired = !bCancelled && ((b.travelDate || b.date || '') < todayStr);
+      const aActive = !aCancelled && !aExpired;
+      const bActive = !bCancelled && !bExpired;
+      if (aActive !== bActive) return aActive ? -1 : 1;
+      const da = a.travelDate || a.date || '';
+      const db = b.travelDate || b.date || '';
+      return db.localeCompare(da);
+    })
+  );
+
+  // Genera/obtiene un QR funcional real (el mismo backend que envia el correo)
+  $effect(() => {
+    for (const booking of bookings) {
+      if (booking.qrCode || qrMap[booking.id]) continue;
+      const payload = booking.qrPayload || booking.bookingCode;
+      (async () => {
+        const endpoints = [
+          '/api/bookings/qr',
+          'http://localhost:8000/api/bookings/qr'
+        ];
+        for (const ep of endpoints) {
+          try {
+            const res = await fetch(ep, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ data: payload })
+            });
+            if (res.ok) {
+              const d = await res.json();
+              if (d?.qrCode) {
+                qrMap[booking.id] = d.qrCode;
+              }
+              break;
+            }
+          } catch {}
+        }
+      })();
+    }
+  });
 </script>
 
 <div id="my-bookings-view" class="max-w-5xl mx-auto space-y-6 pb-16">
@@ -65,12 +116,14 @@
     </div>
   {:else}
     <div class="space-y-4">
-      {#each bookings as booking (booking.id)}
+      {#each sortedBookings as booking (booking.id)}
         {@const isCancelled = booking.status === 'cancelled'}
+        {@const isExpired = !isCancelled && ((booking.travelDate || booking.date || '') < todayStr)}
         {@const isConfirmingCancel = cancellingId === booking.id}
+        {@const qrSrc = booking.qrCode || qrMap[booking.id]}
 
         <div
-          class="bg-white border rounded-2xl p-5 sm:p-6 shadow-sm transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-6 {isCancelled ? 'border-slate-200 bg-slate-50/70 opacity-70' : 'border-slate-200 hover:border-slate-300'}"
+          class="bg-white border rounded-2xl p-5 sm:p-6 shadow-sm transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-6 {isCancelled || isExpired ? 'border-slate-200 bg-slate-50/70 opacity-70' : 'border-slate-200 hover:border-slate-300'}"
         >
           <!-- Route details -->
           <div class="space-y-3 flex-1">
@@ -88,6 +141,10 @@
               {#if isCancelled}
                 <span class="text-[11px] bg-rose-50 text-rose-700 border border-rose-200 font-bold px-2 py-0.5 rounded-md">
                   Cancelado (Asiento Liberado)
+                </span>
+              {:else if isExpired}
+                <span class="text-[11px] bg-amber-50 text-amber-700 border border-amber-200 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                  <Clock class="w-3.5 h-3.5" /> Vencido
                 </span>
               {:else}
                 <span class="text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
@@ -132,6 +189,25 @@
             </div>
           </div>
 
+          <!-- QR preview -->
+          <div class="mt-3 flex items-center gap-3">
+            {#if qrSrc}
+              <img
+                src={qrSrc}
+                alt="QR de acceso"
+                class="w-24 h-24 rounded-xl border border-slate-200 bg-white p-2 shadow-sm object-contain"
+              />
+            {:else}
+              <div class="w-24 h-24 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-400 text-[10px] font-semibold">
+                Generando QR...
+              </div>
+            {/if}
+            <div class="text-[11px] text-slate-500 space-y-0.5">
+              <div class="font-semibold text-slate-700">QR de torniquete</div>
+              <div class="font-mono truncate max-w-[220px]">{booking.qrPayload || booking.bookingCode}</div>
+            </div>
+          </div>
+
           <!-- Price & Actions -->
           <div class="flex md:flex-col items-center md:items-end justify-between border-t md:border-t-0 pt-4 md:pt-0 border-slate-100 gap-3">
             <div class="text-left md:text-right">
@@ -151,8 +227,9 @@
                   <span>Ver Billete & QR</span>
                 </button>
 
-                {#if isConfirmingCancel}
-                  <div class="flex items-center gap-1">
+                {#if !isExpired}
+                  {#if isConfirmingCancel}
+                    <div class="flex items-center gap-1">
                     <button
                       onclick={() => {
                         onCancelBooking(booking.id);
@@ -179,6 +256,7 @@
                     <span>Anular</span>
                   </button>
                 {/if}
+              {/if}
               {/if}
             </div>
           </div>
