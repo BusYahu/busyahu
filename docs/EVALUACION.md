@@ -3,21 +3,22 @@
 
 > Documento **generado automáticamente** por la cátedra de Programación III (RepoSense + análisis de calidad + constancia). **No editar a mano**: se regenera en cada evaluación.
 > Rama evaluada: `main`. Análisis **heurístico** (regex + métricas): es una criba para orientar la revisión, **no una nota**.
-> Generado: 2026-10-28.
+> Generado: 2026-10-29.
 
 ## 1. Veredicto
 
 | Aspecto | Resultado |
 |---|---|
 | Tipo de proyecto | frontend |
-| Índice de calidad de servicios | **9/100** (mínimo 60) |
+| Índice de calidad de servicios | **5/100** (mínimo 60) |
 | Criterios cumplidos | **9/15** |
 | Aprobado (semáforo) | **NO** |
-| Código (LOC) | 7,924 |
-| Archivos de código | 63 |
-| Tests (archivos) | 0 |
+| Código (LOC) | 11,323 |
+| Archivos de código | 70 |
+| Tests (archivos) | 1 |
 | Cobertura de líneas | no medible (mínimo 80%) |
 | Capas detectadas | vistas, servicios, estado |
+| Tope por duplicación | `DUP>=15%` → índice ≤ 50 |
 
 > **Aprobado** exige cumplir **todos** los criterios del semáforo. No es una nota: sirve para ordenar y priorizar la revisión.
 
@@ -25,8 +26,8 @@
 
 | Autor | Commits | Código (LOC) | Tests (LOC) | Docs (LOC) | Días activos | % del código |
 |---|---:|---:|---:|---:|---:|---:|
-| Valentino Dilello | 10 | 2,757 | 0 | 23,638 | 12 | 51% |
-| Lauti Gómez | 8 | 2,650 | 0 | 60 | 6 | 49% |
+| Valentino Dilello | 15 | 4,345 | 0 | 23,668 | 17 | 56% |
+| Lauti Gómez | 9 | 3,441 | 0 | 60 | 7 | 44% |
 
 > _El LOC de autoría lo calcula RepoSense sobre el historial y puede diferir del LOC de código del análisis de calidad (que mira solo el estado de `main`)._
 
@@ -36,7 +37,7 @@
 
 | Alumno | Sesiones | Cumplimiento | Pausa | Recencia | IC | Nivel | Para subir de nivel |
 |---|--:|--:|--:|--:|--:|--|--|
-| Valentino Dilello | 12 | 55% | 21 d | 64% | **45** | No aprueba | Pausa 21 d (máx. 10 d) |
+| Valentino Dilello | 12 | 55% | 21 d | 57% | **43** | No aprueba | Pausa 21 d (máx. 10 d) |
 | Lauti Gómez | 7 | 32% | 35 d | 0% | **21** | No aprueba | Cumplimiento 32% (mín. 50%); Pausa 35 d (máx. 10 d); Recencia 0% (mín. 50%) |
 
 > Para aprobar el IC: **2 sesiones por semana** sostenidas, sin pausas mayores a **10 días** y con actividad en las **últimas 2 semanas**. Se excluyen merges, bots y al docente. Zona horaria UTC-3.
@@ -49,17 +50,21 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 - **Qué mide:** Un resumen numérico (0-100) que combina todas las señales y métricas del análisis, con topes duros por duplicación.
 - **Por qué importa:** Ordena y prioriza la revisión: un índice bajo indica varias señales que conviene mirar juntas.
-- **Tu resultado:** índice **9/100** _(mínimo 60)_
+- **Tu resultado:** índice **5/100** _(mínimo 60)_
 - **Para investigar la causa:**
     - ¿En qué momento del proyecto se concentraron los problemas (arranque, integración de partes, cierre)?
     - ¿El índice bajó por muchas señales chicas o por una o dos graves?
     - ¿Se revisó el código integrado después de unir el trabajo de cada integrante?
 
-### 2. Duplicación (DRY) (duplicacion) — OK
+### 2. Duplicación (DRY) (duplicacion) — A REVISAR
 
 - **Qué mide:** Porcentaje de bloques de código repetidos (similitud) en el repositorio.
 - **Por qué importa:** Cada copia se mantiene por separado: un arreglo hay que repetirlo y los defectos se multiplican.
-- **Tu resultado:** **13.1%** de duplicación _(máximo 15%)_
+- **Tu resultado:** **17.9%** de duplicación _(máximo 15%)_
+- **Para investigar la causa:**
+    - ¿El trabajo se repartió por pantallas o archivos y se integró copiando y pegando bloques?
+    - ¿Qué zonas del sistema cambiaron juntas más de una vez (señal de lógica compartida)?
+    - ¿Hubo un lugar común acordado para la lógica repetida antes de empezar, o cada integrante resolvió lo suyo?
 
 ### 3. Secretos hardcodeados (SEC) — OK
 
@@ -83,7 +88,7 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 - **Qué mide:** Llamadas `fetch`/`axios` dentro de componentes de UI en vez de una capa de servicios/API.
 - **Por qué importa:** Duplica la lógica de acceso a datos y acopla la vista al backend: un cambio de API toca muchos componentes.
-- **Tu resultado:** **1** llamada(s) a la API dentro de componente(s) _(máximo 0)_
+- **Tu resultado:** **5** llamada(s) a la API dentro de componente(s) _(máximo 0)_
 - **Para investigar la causa:**
     - ¿Por qué se llamó directo desde el componente: urgencia, desconocimiento de una capa de servicios, o prueba rápida?
     - ¿La misma llamada aparece en más de un componente?
@@ -93,7 +98,7 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 - **Qué mide:** Mensajes de depuración olvidados (`console.log`, `print`, `debugger`).
 - **Por qué importa:** Generan ruido en los registros, pueden filtrar datos y dan sensación de código sin terminar.
-- **Tu resultado:** **20** mensaje(s) de depuración olvidado(s) _(máximo 0)_
+- **Tu resultado:** **21** mensaje(s) de depuración olvidado(s) _(máximo 0)_
 - **Para investigar la causa:**
     - ¿Fue depuración que quedó al cerrar una tarea, o se usó como registro permanente?
     - ¿Hubo una revisión final antes de cerrar la issue o la entrega?
@@ -109,7 +114,7 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 - **Qué mide:** Componentes de UI muy extensos, que suelen mezclar render, estado y lógica.
 - **Por qué importa:** Son difíciles de leer, probar y reutilizar, y sus cambios tienen efectos inesperados.
-- **Tu resultado:** **14** componente(s) demasiado grande(s) _(máximo 1)_
+- **Tu resultado:** **16** componente(s) demasiado grande(s) _(máximo 1)_
 - **Para investigar la causa:**
     - ¿El componente creció a medida que se agregaban requisitos, sin volver a dividirlo?
     - ¿Mezcla responsabilidades distintas (mostrar, calcular, pedir datos)?
@@ -125,23 +130,19 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 - **Qué mide:** Complejidad ciclomática: cantidad de caminos posibles dentro de una función (condicionales, bucles, casos).
 - **Por qué importa:** Muchos caminos = difícil de seguir y de probar; suelen esconderse casos sin cubrir.
-- **Tu resultado:** **9** bloque(s) de complejidad alta _(máximo 5 por 1000 LOC (tenés 7924 LOC))_
+- **Tu resultado:** **35** bloque(s) de complejidad alta _(máximo 5 por 1000 LOC (tenés 11323 LOC))_
 
 ### 12. Funciones/métodos largos o con muchos parámetros (Tam) — OK
 
 - **Qué mide:** Tamaño de las funciones/métodos y cantidad de parámetros.
 - **Por qué importa:** Una función que hace varias cosas cuesta leerla, nombrarla y reutilizarla.
-- **Tu resultado:** **21** función/método(s) largos o con muchos parámetros _(máximo 10 por 1000 LOC)_
+- **Tu resultado:** **45** función/método(s) largos o con muchos parámetros _(máximo 10 por 1000 LOC)_
 
-### 13. Acoplamiento alto (Acop) — A REVISAR
+### 13. Acoplamiento alto (Acop) — OK
 
 - **Qué mide:** Cuánto depende una unidad de las partes internas de otra.
 - **Por qué importa:** Piezas muy enlazadas hacen que un cambio se propague y que sea difícil reemplazar partes.
-- **Tu resultado:** **18** unidad(es) con acoplamiento alto _(máximo 2 por 1000 LOC)_
-- **Para investigar la causa:**
-    - ¿Las piezas se conocen en detalle entre sí (acceden a campos o estructuras internas)?
-    - ¿El acceso a datos ocurre desde lugares que no son los responsables?
-    - ¿Se puede cambiar una parte sin tocar las demás?
+- **Tu resultado:** **19** unidad(es) con acoplamiento alto _(máximo 2 por 1000 LOC)_
 
 ### 14. Cobertura de tests (Cob) — A REVISAR
 
@@ -157,7 +158,7 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 - **Qué mide:** Cantidad de vistas/componentes de pantalla del frontend.
 - **Por qué importa:** El frontend se mide por pantallas: pocas vistas sugiere poca cobertura de la interfaz pedida.
-- **Tu resultado:** **22** vista(s)/componente(s) _(mínimo 8)_
+- **Tu resultado:** **24** vista(s)/componente(s) _(mínimo 8)_
 
 ## 5. Qué falta para aprobar
 
@@ -165,11 +166,11 @@ Criterios que hoy están en rojo y qué habría que cambiar para alcanzar el niv
 
 | Criterio | Resultado actual | Meta | Qué arreglar |
 |---|---|---|---|
-| Índice de calidad de servicios (indice) | índice **9/100** | mínimo 60 | Subir el índice a ≥60 corrigiendo primero las señales de más peso: duplicación, secretos, SQL y capas. |
-| Acceso a datos dentro del componente (HTTP) | **1** llamada(s) a la API dentro de componente(s) | máximo 0 | Mover `fetch`/`axios` a una capa de servicios/API y consumirla desde los componentes; 0 casos. |
-| Depuración olvidada (DBG) | **20** mensaje(s) de depuración olvidado(s) | máximo 0 | Quitar `console.log`/`print`/`debugger` del código de producción; 0 casos. |
-| Componente demasiado grande (BigC) | **14** componente(s) demasiado grande(s) | máximo 1 | Dividir el componente por responsabilidad en subcomponentes; ≤1 componente grande. |
-| Acoplamiento alto (Acop) | **18** unidad(es) con acoplamiento alto | máximo 2 por 1000 LOC | Reducir dependencias directas entre unidades; ≤2 por 1000 LOC. |
+| Índice de calidad de servicios (indice) | índice **5/100** | mínimo 60 | Subir el índice a ≥60 corrigiendo primero las señales de más peso: duplicación, secretos, SQL y capas. |
+| Duplicación (DRY) (duplicacion) | **17.9%** de duplicación | máximo 15% | Unificar los bloques repetidos en un módulo o función compartida; apuntar a ≤15%. |
+| Acceso a datos dentro del componente (HTTP) | **5** llamada(s) a la API dentro de componente(s) | máximo 0 | Mover `fetch`/`axios` a una capa de servicios/API y consumirla desde los componentes; 0 casos. |
+| Depuración olvidada (DBG) | **21** mensaje(s) de depuración olvidado(s) | máximo 0 | Quitar `console.log`/`print`/`debugger` del código de producción; 0 casos. |
+| Componente demasiado grande (BigC) | **16** componente(s) demasiado grande(s) | máximo 1 | Dividir el componente por responsabilidad en subcomponentes; ≤1 componente grande. |
 | Cobertura de tests (Cob) | **no medible** (sin tests, sin runner o sin artefacto de cobertura) | mínimo 80% de líneas | Publicar cobertura (o correr la suite con coverage) y cubrir ≥80% de líneas. |
 
 > Empezá por las señales de seguridad (**SEC**, **SQL**) y por la **duplicación**: son las que más pesan en el índice y las más rápidas de verificar a ojo.
@@ -178,8 +179,12 @@ Criterios que hoy están en rojo y qué habría que cambiar para alcanzar el niv
 
 Archivos donde el análisis encontró cada señal en rojo (sin número de línea, a propósito):
 
-**Acceso a datos dentro del componente (HTTP)** — 1 archivo(s):
+**Acceso a datos dentro del componente (HTTP)** — 5 archivo(s):
+- `frontend-svelte/src/App.svelte`
+- `frontend-svelte/src/components/AuthModal.svelte`
+- `frontend-svelte/src/components/MyBookingsView.svelte`
 - `frontend-svelte/src/components/ProjectManagementView.svelte`
+- `frontend-svelte/src/components/TicketConfirmationView.svelte`
 
 **Depuración olvidada (DBG)** — 7 archivo(s):
 - `backend-express/src/config/db.ts`
@@ -190,11 +195,13 @@ Archivos donde el análisis encontró cada señal en rojo (sin número de línea
 - `frontend-svelte/src/lib/components/SearchView.svelte`
 - `frontend-svelte/src/lib/stores.js`
 
-**Componente demasiado grande (BigC)** — 14 archivo(s):
+**Componente demasiado grande (BigC)** — 16 archivo(s):
 - `frontend-react/src/App.tsx`
+- `frontend-react/src/components/AdminRouteManagementView.tsx`
 - `frontend-react/src/components/MyBookings.tsx`
 - `frontend-react/src/components/SeatMap.tsx`
 - `frontend-svelte/src/App.svelte`
+- `frontend-svelte/src/components/AuthModal.svelte`
 - `frontend-svelte/src/components/MyBookingsView.svelte`
 - `frontend-svelte/src/components/ProjectManagementView.svelte`
 - `frontend-svelte/src/components/SeatSelectionCheckoutView.svelte`
@@ -205,14 +212,6 @@ Archivos donde el análisis encontró cada señal en rojo (sin número de línea
 - `frontend-svelte/src/lib/components/SearchView.svelte`
 - `frontend-svelte/src/lib/components/SeatMap.svelte`
 - `frontend-svelte/src/lib/components/TicketView.svelte`
-
-**Acoplamiento alto (Acop)** — 6 archivo(s):
-- `backend-fastapi/app/config.py`
-- `backend-fastapi/app/schemas/booking.py`
-- `backend-fastapi/app/schemas/destination.py`
-- `backend-fastapi/app/schemas/train.py`
-- `backend-fastapi/app/schemas/user.py`
-- `frontend-svelte/src/lib/api.js`
 
 ---
 _Informe generado por la cátedra. Los umbrales corresponden al perfil `exigente`. Ante dudas, revisá el archivo señalado y el criterio en `CRITERIOS-CALIDAD.md`._
