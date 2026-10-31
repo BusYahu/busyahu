@@ -15,6 +15,7 @@ env/
 dist/
 build/
 .cache/
+*.tsbuildinfo
 
 # Base de datos local
 mongo_data/

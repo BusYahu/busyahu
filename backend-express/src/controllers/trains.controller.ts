@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import { getDB } from '../config/db';
+import { AuthRequest } from '../middlewares/auth.middleware';
 import { IDestination, ITrain, ICarriageSeatsResponse, ISeatStatus } from '../models/train.model';
 
 // 1. GET /api/destinations - Catálogo de los 11 países y sus estaciones
@@ -201,5 +202,92 @@ export async function getTrainSeats(req: Request, res: Response): Promise<void> 
   } catch (error) {
     console.error('Error al generar mapa de asientos:', error);
     res.status(500).json({ error: 'Internal Server Error', message: 'Error al generar mapa de asientos.' });
+  }
+}
+
+// 5. POST /api/trains - crear una nueva ruta/tren (solo usuario autorizado)
+export async function createTrain(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const allowedEmail = 'v.dilello@alumno.etec.um.edu.ar';
+    if (
+      !req.user ||
+      (req.user.email.toLowerCase().trim() !== allowedEmail && req.user.role !== 'admin')
+    ) {
+      res.status(403).json({
+        error: 'Forbidden',
+        message: 'No autorizado para crear rutas.',
+      });
+      return;
+    }
+
+    const body = (req.body ?? {}) as Record<string, any>;
+    const code = String(body.code ?? '').trim();
+    const name = String(body.name ?? '').trim();
+    const countryCode = String(body.countryCode ?? body.country_code ?? '').trim().toUpperCase();
+    const originStationId = String(body.originStationId ?? body.origin_station_id ?? '').trim();
+    const destinationStationId = String(
+      body.destinationStationId ?? body.destination_station_id ?? '',
+    ).trim();
+
+    if (!code || !name || !countryCode || !originStationId || !destinationStationId) {
+      res.status(400).json({
+        error: 'Bad Request',
+        message:
+          'Faltan campos obligatorios: code, name, countryCode, originStationId, destinationStationId.',
+      });
+      return;
+    }
+
+    const db = getDB();
+    const trainsCollection = db.collection<ITrain>('trains');
+    const existing = await trainsCollection.findOne({ code });
+    if (existing) {
+      res.status(400).json({
+        error: 'Bad Request',
+        message: 'Ya existe un tren con ese código.',
+      });
+      return;
+    }
+
+    const train: ITrain & { createdAt?: string; createdBy?: string; currency?: string } = {
+      code,
+      name,
+      type: String(body.type ?? '').trim(),
+      countryCode,
+      originStationId,
+      destinationStationId,
+      departureTime: String(body.departureTime ?? body.departure_time ?? '08:30').trim(),
+      arrivalTime: String(body.arrivalTime ?? body.arrival_time ?? '11:45').trim(),
+      duration: String(body.duration ?? '3h 15m').trim(),
+      basePrice: Number(body.basePrice ?? body.base_price ?? 0),
+      carriages: Array.isArray(body.carriages) && body.carriages.length
+        ? body.carriages
+        : [
+            {
+              carriageNumber: 1,
+              classType: 'Standard',
+              totalSeats: 20,
+              rows: 5,
+              seatsPerRow: 4,
+            },
+          ],
+      currency: String(body.currency ?? 'EUR'),
+      createdAt: new Date().toISOString(),
+      createdBy: req.user.email,
+    };
+
+    const result = await trainsCollection.insertOne(train);
+    res.status(201).json({
+      success: true,
+      id: result.insertedId.toHexString(),
+      code,
+      message: 'Ruta creada exitosamente.',
+    });
+  } catch (error) {
+    console.error('Error al crear tren:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Error al crear la ruta.',
+    });
   }
 }

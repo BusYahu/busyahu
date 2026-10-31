@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Booking } from '../types';
+  import { apiGateway } from '../lib/api.js';
   import { 
     CheckCircle2, 
     Printer, 
@@ -34,19 +35,14 @@
   $effect(() => {
     if (!qrImage && booking?.qrPayload) {
       (async () => {
-        const endpoints = [
-          '/api/bookings/qr',
-          'http://localhost:8000/api/bookings/qr'
-        ];
-        for (const ep of endpoints) {
-          try {
-            const res = await fetch(ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: booking.qrPayload }) });
-            if (res.ok) {
-              const d = await res.json();
-              if (d?.qrCode) { qrImage = d.qrCode; booking.qrCode = d.qrCode; }
-              break;
-            }
-          } catch {}
+        try {
+          const data = await apiGateway.generateQr(booking.qrPayload);
+          if (data.qrCode) {
+            qrImage = data.qrCode;
+            booking.qrCode = data.qrCode;
+          }
+        } catch {
+          // QR opcional: el billete se muestra igualmente.
         }
       })();
     }
@@ -68,47 +64,28 @@
       booking: booking
     };
 
-    // Probamos primero el proxy /api/ y luego la conexion directa con el backend
-    const endpoints = [
-      '/api/bookings/send-direct-email',
-      'http://localhost:8000/api/bookings/send-direct-email',
-      '/api/send-ticket'
-    ];
-
     let success = false;
     let lastMsg = '';
 
-    for (const endpoint of endpoints) {
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success) {
-            emailStatus = 'sent';
-            statusMessage = `¡Billete enviado con éxito a ${emailToSend}! Revisa tu bandeja de entrada o spam.`;
-            if (data.qrCode) {
-              qrImage = data.qrCode;
-              booking.qrCode = data.qrCode;
-            }
-            success = true;
-            break;
-          } else if (data.configured === false || (data.message && data.message.includes('configur'))) {
-            emailStatus = 'not_configured';
-            statusMessage = data.message || 'Configuración SMTP pendiente: coloca tu correo y contraseña de aplicación en docker-compose.yml o .env.';
-            success = true;
-            break;
-          } else {
-            lastMsg = data.message || data.error || 'Error al procesar el envío';
-          }
+    try {
+      const data = await apiGateway.sendTicketEmail(payload);
+      if (data.success) {
+        emailStatus = 'sent';
+        statusMessage = `¡Billete enviado con éxito a ${emailToSend}! Revisa tu bandeja de entrada o spam.`;
+        if (data.qrCode) {
+          qrImage = String(data.qrCode);
+          booking.qrCode = String(data.qrCode);
         }
-      } catch (e) {
-        // Continuamos al siguiente endpoint
+        success = true;
+      } else if (data.configured === false || String(data.message ?? '').includes('configur')) {
+        emailStatus = 'not_configured';
+        statusMessage = String(data.message ?? '') || 'Configuración SMTP pendiente: coloca tu correo y contraseña de aplicación en docker-compose.yml o .env.';
+        success = true;
+      } else {
+        lastMsg = String(data.message ?? data.error ?? 'Error al procesar el envío');
       }
+    } catch (error: any) {
+      lastMsg = error?.toUserMessage?.() || error?.message || 'Error de red al enviar el billete.';
     }
 
     if (!success) {
@@ -132,31 +109,12 @@
     walletLoading = true;
     walletMessage = null;
     try {
-      const stored = localStorage.getItem('busyahu_user');
-      const token = stored ? JSON.parse(stored).token : null;
-      const endpoints = [
-        `/api/bookings/generate-wallet`,
-        `http://localhost:8000/api/bookings/generate-wallet`
-      ];
-      let data: any = null;
-      for (const ep of endpoints) {
-        try {
-          const res = await fetch(ep, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              booking,
-              platform,
-              originCity: booking?.train?.fromCity,
-              destinationCity: booking?.train?.toCity
-            })
-          });
-          if (res.ok) {
-            data = await res.json();
-            break;
-          }
-        } catch {}
-      }
+      const data = await apiGateway.generateWallet({
+        booking,
+        platform,
+        originCity: booking?.train?.fromCity,
+        destinationCity: booking?.train?.toCity,
+      });
       if (data && data.success) {
         let msg = 'Pass de Wallet generado y enviado a tu correo.';
         if (data.featuredActionsIncluded === false) {
@@ -171,7 +129,7 @@
         walletMessage = data?.message || 'No se pudo generar el pass de Wallet.';
       }
     } catch (e: any) {
-      walletMessage = e?.message || 'Error al generar el pass de Wallet.';
+      walletMessage = e?.toUserMessage?.() || e?.message || 'Error al generar el pass de Wallet.';
     } finally {
       walletLoading = false;
     }
@@ -179,41 +137,19 @@
 
   async function handlePrint() {
     try {
-      const stored = localStorage.getItem('busyahu_user');
-      const token = stored ? JSON.parse(stored).token : null;
-      const endpoints = [
-        `/api/bookings/generate-pdf`,
-        `http://localhost:8000/api/bookings/generate-pdf`
-      ];
-      for (const ep of endpoints) {
-        try {
-          const res = await fetch(ep, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
-            },
-            body: JSON.stringify(booking)
-          });
-          if (res.ok) {
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const win = window.open(url, '_blank');
-            if (!win) {
-              // Fallback: descargar
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `billete_${booking.bookingCode}.pdf`;
-              a.click();
-            }
-            setTimeout(() => URL.revokeObjectURL(url), 60000);
-            return;
-          }
-        } catch {}
+      const blob = await apiGateway.generatePdf(booking);
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, '_blank');
+      if (!win) {
+        // Fallback: descargar
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `billete_${booking.bookingCode}.pdf`;
+        a.click();
       }
-      // Fallback si no hay PDF
-      window.print();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch {
+      // Fallback si no hay PDF
       window.print();
     }
   }

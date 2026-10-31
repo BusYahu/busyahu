@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     DATABASE_NAME: str = os.getenv("DATABASE_NAME", os.getenv("MONGO_INITDB_DATABASE", "railworld_db"))
     
     # Configuracion de Seguridad JWT
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "super_secret_railworld_key_2026")
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "super_secret_jwt_key_busyahu_prog3_2026_secure")
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = _get_int("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24 * 7)  # 7 dias
     

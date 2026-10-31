@@ -1,11 +1,33 @@
-import { writable, derived } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { api } from './api.js';
+import {
+  clearSession,
+  getToken,
+  normalizeUser,
+  readCachedBookings,
+  readSearchFilters,
+  readSession,
+  saveCachedBookings,
+  saveSearchFilters,
+  saveSession,
+} from './storage.js';
 
-// Auth store
+function defaultFilters() {
+  const stored = readSearchFilters();
+  return {
+    country: stored.countryId || '',
+    from: stored.fromCity || '',
+    to: stored.toCity || '',
+    date: stored.travelDate || new Date().toISOString().split('T')[0],
+  };
+}
+
+// Auth store — misma sesión compartida que React (busyahu_token / busyahu_user).
 function createAuthStore() {
+  const initialSession = readSession();
   const { subscribe, set, update } = writable({
-    user: null,
-    token: localStorage.getItem('busyahu_token'),
+    user: initialSession.user,
+    token: initialSession.token ?? getToken(),
     loading: false,
     error: null,
   });
@@ -13,55 +35,61 @@ function createAuthStore() {
   return {
     subscribe,
     login: async (email, password) => {
-      update(s => ({ ...s, loading: true, error: null }));
+      update((s) => ({ ...s, loading: true, error: null }));
       try {
         const data = await api.login(email, password);
         set({ user: data.user, token: data.token, loading: false, error: null });
         return data;
       } catch (err) {
-        update(s => ({ ...s, loading: false, error: err.message }));
+        update((s) => ({ ...s, loading: false, error: err.message }));
         throw err;
       }
     },
     register: async (name, email, password) => {
-      update(s => ({ ...s, loading: true, error: null }));
+      update((s) => ({ ...s, loading: true, error: null }));
       try {
-        await api.register(name, email, password);
-        // Auto-login after registration
-        const data = await api.login(email, password);
+        const data = await api.register({ name, email, password });
+        if (data.token) {
+          saveSession(data.user, data.token);
+        }
         set({ user: data.user, token: data.token, loading: false, error: null });
         return data;
       } catch (err) {
-        update(s => ({ ...s, loading: false, error: err.message }));
+        update((s) => ({ ...s, loading: false, error: err.message }));
         throw err;
       }
     },
     logout: () => {
-      api.clearToken();
+      clearSession();
       set({ user: null, token: null, loading: false, error: null });
     },
     checkAuth: async () => {
-      const token = localStorage.getItem('busyahu_token');
-      if (!token) {
+      const session = readSession();
+      if (!session.token) {
         set({ user: null, token: null, loading: false, error: null });
         return;
       }
-      update(s => ({ ...s, loading: true }));
+      update((s) => ({ ...s, loading: true }));
       try {
         const user = await api.getProfile();
-        set({ user, token, loading: false, error: null });
+        saveSession(user, session.token);
+        set({ user, token: session.token, loading: false, error: null });
       } catch {
-        api.clearToken();
+        clearSession();
         set({ user: null, token: null, loading: false, error: null });
       }
     },
-    clearError: () => update(s => ({ ...s, error: null })),
+    syncFromStorage: () => {
+      const session = readSession();
+      set({ user: session.user, token: session.token, loading: false, error: null });
+    },
+    clearError: () => update((s) => ({ ...s, error: null })),
   };
 }
 
 export const auth = createAuthStore();
 
-// Destinations store
+// Destinations store — catálogo normalizado desde Express o FastAPI.
 function createDestinationsStore() {
   const { subscribe, set } = writable({
     destinations: [],
@@ -75,9 +103,7 @@ function createDestinationsStore() {
       set({ destinations: [], loading: true, error: null });
       try {
         const data = await api.getDestinations();
-        // Handle both formats: array directly or object with destinations property
-        const destinationsList = Array.isArray(data) ? data : (data.destinations || []);
-        set({ destinations: destinationsList, loading: false, error: null });
+        set({ destinations: data, loading: false, error: null });
       } catch (err) {
         set({ destinations: [], loading: false, error: err.message });
       }
@@ -87,32 +113,41 @@ function createDestinationsStore() {
 
 export const destinations = createDestinationsStore();
 
-// Search store
+// Search store — filtros persistentes y resultados normalizados.
 function createSearchStore() {
+  const initialFilters = defaultFilters();
   const { subscribe, set, update } = writable({
     results: [],
     total: 0,
     loading: false,
     error: null,
-    filters: {
-      country: '',
-      from: '',
-      to: '',
-      date: new Date().toISOString().split('T')[0],
-    },
+    filters: initialFilters,
   });
 
   return {
     subscribe,
     setFilters: (newFilters) => {
-      update(s => ({ ...s, filters: { ...s.filters, ...newFilters } }));
+      update((s) => {
+        const filters = { ...s.filters, ...newFilters };
+        saveSearchFilters({
+          countryId: filters.country,
+          fromCity: filters.from,
+          toCity: filters.to,
+          travelDate: filters.date,
+        });
+        return { ...s, filters };
+      });
     },
     search: async (filters) => {
-      update(s => ({ ...s, loading: true, error: null }));
+      update((s) => ({ ...s, loading: true, error: null }));
       try {
         const data = await api.searchTrains(filters);
-        console.log('[SearchStore] API response:', data);
-        console.log('[SearchStore] Filters sent:', filters);
+        saveSearchFilters({
+          countryId: filters.country,
+          fromCity: filters.from,
+          toCity: filters.to,
+          travelDate: filters.date,
+        });
         set({
           results: data.trains || [],
           total: data.total || 0,
@@ -121,22 +156,10 @@ function createSearchStore() {
           filters,
         });
       } catch (err) {
-        console.error('[SearchStore] API error:', err);
-        update(s => ({ ...s, loading: false, error: err.message }));
+        update((s) => ({ ...s, loading: false, error: err.message }));
       }
     },
-    clear: () => set({
-      results: [],
-      total: 0,
-      loading: false,
-      error: null,
-      filters: {
-        country: '',
-        from: '',
-        to: '',
-        date: new Date().toISOString().split('T')[0],
-      },
-    }),
+    clear: () => set({ results: [], total: 0, loading: false, error: null, filters: defaultFilters() }),
   };
 }
 
@@ -154,34 +177,34 @@ function createSeatStore() {
   return {
     subscribe,
     loadSeatMap: async (trainId, date) => {
-      update(s => ({ ...s, loading: true, error: null, selectedSeats: [] }));
+      update((s) => ({ ...s, loading: true, error: null, selectedSeats: [] }));
       try {
         const data = await api.getSeatMap(trainId, date);
         set({ seatMap: data, selectedSeats: [], loading: false, error: null });
       } catch (err) {
-        update(s => ({ ...s, loading: false, error: err.message }));
+        update((s) => ({ ...s, loading: false, error: err.message }));
       }
     },
     toggleSeat: (seat) => {
-      update(s => {
-        const exists = s.selectedSeats.find(sa => sa.seatNumber === seat.seatNumber);
+      update((s) => {
+        const exists = s.selectedSeats.find((sa) => sa.seatNumber === seat.seatNumber);
         if (exists) {
-          return { ...s, selectedSeats: s.selectedSeats.filter(sa => sa.seatNumber !== seat.seatNumber) };
+          return { ...s, selectedSeats: s.selectedSeats.filter((sa) => sa.seatNumber !== seat.seatNumber) };
         }
         return { ...s, selectedSeats: [...s.selectedSeats, seat] };
       });
     },
-    clearSelection: () => update(s => ({ ...s, selectedSeats: [] })),
+    clearSelection: () => update((s) => ({ ...s, selectedSeats: [] })),
     clear: () => set({ seatMap: null, selectedSeats: [], loading: false, error: null }),
   };
 }
 
 export const seatStore = createSeatStore();
 
-// Bookings store
+// Bookings store — caché compartida busyahu_bookings.
 function createBookingsStore() {
   const { subscribe, set, update } = writable({
-    bookings: [],
+    bookings: readCachedBookings(),
     currentBooking: null,
     loading: false,
     error: null,
@@ -190,42 +213,44 @@ function createBookingsStore() {
   return {
     subscribe,
     loadMyBookings: async () => {
-      update(s => ({ ...s, loading: true, error: null }));
+      update((s) => ({ ...s, loading: true, error: null }));
       try {
         const data = await api.getMyBookings();
+        saveCachedBookings(data || []);
         set({ bookings: data || [], loading: false, error: null, currentBooking: null });
       } catch (err) {
-        update(s => ({ ...s, loading: false, error: err.message }));
+        update((s) => ({ ...s, loading: false, error: err.message }));
       }
     },
     loadBooking: async (bookingId) => {
-      update(s => ({ ...s, loading: true, error: null }));
+      update((s) => ({ ...s, loading: true, error: null }));
       try {
         const data = await api.getBooking(bookingId);
-        set({ ...[], currentBooking: data, loading: false, error: null });
+        set({ bookings: readCachedBookings(), currentBooking: data, loading: false, error: null });
         return data;
       } catch (err) {
-        update(s => ({ ...s, loading: false, error: err.message }));
+        update((s) => ({ ...s, loading: false, error: err.message }));
         throw err;
       }
     },
     cancelBooking: async (bookingId) => {
-      update(s => ({ ...s, loading: true, error: null }));
+      update((s) => ({ ...s, loading: true, error: null }));
       try {
         await api.cancelBooking(bookingId);
-        update(s => ({
+        update((s) => ({
           ...s,
-          bookings: s.bookings.map(b =>
-            b.id === bookingId ? { ...b, status: 'cancelled' } : b
+          bookings: s.bookings.map((b) =>
+            b.id === bookingId || b.bookingCode === bookingId ? { ...b, status: 'cancelled' } : b,
           ),
           loading: false,
           error: null,
         }));
       } catch (err) {
-        update(s => ({ ...s, loading: false, error: err.message }));
+        update((s) => ({ ...s, loading: false, error: err.message }));
         throw err;
       }
     },
+    syncFromStorage: () => update((s) => ({ ...s, bookings: readCachedBookings() })),
     clear: () => set({ bookings: [], currentBooking: null, loading: false, error: null }),
   };
 }
@@ -261,3 +286,5 @@ function createModalStore() {
 }
 
 export const modal = createModalStore();
+
+export { normalizeUser };

@@ -34,7 +34,7 @@ services:
       PORT: ${PORT_EXPRESS:-4000}
       MONGO_URI: ${MONGO_URI:-mongodb://admin:secretpassword@mongo:27017/railworld_db?authSource=admin}
       DATABASE_NAME: ${MONGO_INITDB_DATABASE:-railworld_db}
-      JWT_SECRET: ${JWT_SECRET:-super_secret_railworld_key_2026}
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_busyahu_prog3_2026_secure}
       CORS_ORIGIN: "*"
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
@@ -61,7 +61,7 @@ services:
       PORT: ${PORT_FASTAPI:-8000}
       MONGO_URI: ${MONGO_URI:-mongodb://admin:secretpassword@mongo:27017/railworld_db?authSource=admin}
       DATABASE_NAME: ${MONGO_INITDB_DATABASE:-railworld_db}
-      JWT_SECRET: ${JWT_SECRET:-super_secret_railworld_key_2026}
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_busyahu_prog3_2026_secure}
       CORS_ORIGIN: "*"
       # -------------------------------------------------------------
       # Configuración de Envío de Correo Real (Gmail / SMTP)
