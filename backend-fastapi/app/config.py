@@ -24,24 +24,14 @@ def _get_int(key: str, default: int) -> int:
 
 def _build_mongo_uri() -> str:
     uri = os.getenv("MONGO_URI", "").strip()
-    user = os.getenv("MONGO_INITDB_ROOT_USERNAME", os.getenv("MONGO_USER", "admin")).strip()
-    pwd = os.getenv("MONGO_INITDB_ROOT_PASSWORD", os.getenv("MONGO_PASSWORD", "secretpassword")).strip()
-    db_name = os.getenv("DATABASE_NAME", os.getenv("MONGO_INITDB_DATABASE", "railworld_db")).strip()
     
-    if not uri:
-        return f"mongodb://{user}:{pwd}@mongo:27017/{db_name}?authSource=admin"
+    # Si especificaste una URI en el .env, ÚSALA TAL CUAL sin forzar contraseñas
+    if uri:
+        # Si tiene 'mongo:27017' y estás en local, la reemplazamos por localhost
+        return uri.replace("@mongo:27017", "@localhost:27017").replace("://mongo:27017", "://localhost:27017")
     
-    if "@" not in uri and user and pwd:
-        clean = uri.replace("mongodb://", "")
-        separator = "&" if "?" in clean else "?"
-        auth_param = "" if "authSource" in clean else f"{separator}authSource=admin"
-        return f"mongodb://{user}:{pwd}@{clean}{auth_param}"
-        
-    if "@" in uri and "authSource" not in uri:
-        separator = "&" if "?" in uri else "?"
-        return f"{uri}{separator}authSource=admin"
-        
-    return uri
+    # Si no hay variable, por defecto conectamos a localhost sin credenciales en local
+    return "mongodb://localhost:27017/busyahu_db"
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "BusYahu API (FastAPI)"
