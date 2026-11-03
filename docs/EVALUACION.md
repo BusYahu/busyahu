@@ -3,7 +3,7 @@
 
 > Documento **generado automáticamente** por la cátedra de Programación III (RepoSense + análisis de calidad + constancia). **No editar a mano**: se regenera en cada evaluación.
 > Rama evaluada: `main`. Análisis **heurístico** (regex + métricas): es una criba para orientar la revisión, **no una nota**.
-> Generado: 2026-11-02.
+> Generado: 2026-11-03.
 
 ## 1. Veredicto
 
@@ -37,7 +37,7 @@
 
 | Alumno | Sesiones | Cumplimiento | Pausa | Recencia | IC | Nivel | Para subir de nivel |
 |---|--:|--:|--:|--:|--:|--|--|
-| Valentino Dilello | 12 | 55% | 21 d | 57% | **43** | No aprueba | Pausa 21 d (máx. 10 d) |
+| Valentino Dilello | 13 | 59% | 21 d | 57% | **46** | No aprueba | Pausa 21 d (máx. 10 d) |
 | Lauti Gómez | 7 | 32% | 35 d | 0% | **21** | No aprueba | Cumplimiento 32% (mín. 50%); Pausa 35 d (máx. 10 d); Recencia 0% (mín. 50%) |
 
 > Para aprobar el IC: **2 sesiones por semana** sostenidas, sin pausas mayores a **10 días** y con actividad en las **últimas 2 semanas**. Se excluyen merges, bots y al docente. Zona horaria UTC-3.
