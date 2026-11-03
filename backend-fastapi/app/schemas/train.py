@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 class CarriageConfig(BaseModel):
     """Configuración de un vagón tal como la almacena el seed compartido (mongo-init.js)."""
     carriageNumber: int = Field(..., description="Número del vagón", example=1)
-    classType: Literal["First", "Standard"] = Field(..., description="Clase del vagón", example="First")
+    classType: Literal["First", "Standard", "Business"] = Field(..., description="Clase del vagón", example="First")
     totalSeats: int = Field(..., description="Capacidad total de asientos del vagón", example=20)
     rows: int = Field(..., description="Cantidad de filas", example=5)
     seatsPerRow: int = Field(..., description="Asientos por fila", example=4)
@@ -80,7 +80,7 @@ class SeatItem(BaseModel):
     seatNumber: str = Field(..., description="Código único del asiento: {vagón}-{fila}{columna}", example="1-1A")
     row: int = Field(..., description="Número de fila", example=1)
     column: str = Field(..., description="Letra de columna", example="A")
-    classType: Literal["First", "Standard"] = Field(..., description="Clase del asiento", example="First")
+    classType: Literal["First", "Standard", "Business"] = Field(..., description="Clase del asiento", example="First")
     status: SeatStatus = Field(..., description="Estado libre/ocupado en la fecha consultada", example="libre")
     price: float = Field(..., description="Precio calculado según clase", example=91.7)
 
@@ -88,7 +88,7 @@ class SeatItem(BaseModel):
 class CarriageSeatsResponse(BaseModel):
     """Vagón con su matriz de asientos (idéntico a Express)."""
     carriageNumber: int = Field(..., description="Número del vagón", example=1)
-    classType: Literal["First", "Standard"] = Field(..., description="Clase del vagón", example="First")
+    classType: Literal["First", "Standard", "Business"] = Field(..., description="Clase del vagón", example="First")
     seats: List[SeatItem] = Field(..., description="Todos los asientos del vagón")
 
 

@@ -1,6 +1,6 @@
 import { MongoClient, Db } from 'mongodb';
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://admin:Admin123!@mongo:27017/busyahu_db?authSource=admin';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/busyahu';
 const DB_NAME = process.env.MONGO_DB_NAME || 'busyahu_db';
 
 let client: MongoClient | null = null;

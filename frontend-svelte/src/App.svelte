@@ -19,6 +19,17 @@
   import MyBookingsView from './components/MyBookingsView.svelte';
   import ProjectManagementView from './components/ProjectManagementView.svelte';
   import AuthModal from './components/AuthModal.svelte';
+  import ConnectivityHub from './components/ConnectivityHub.svelte';
+  import { apiGateway } from './lib/api.js';
+  import {
+    clearSession,
+    getActiveBackend,
+    readCachedBookings,
+    readSession,
+    saveActiveBooking,
+    saveCachedBookings,
+    setEnvironment
+  } from './lib/storage.js';
   import { 
     Train, 
     Ticket, 
@@ -38,8 +49,7 @@
   // Academic / Project Documentation Drawer State
   let isDocsDrawerOpen = $state(false);
 
-  // User Authentication State (Local, NO Firebase)
-  let currentUser = $state<User | null>(null);
+  // User Authentication State (shared localStorage, NO Firebase)
   let isAuthModalOpen = $state(false);
   let isCreateRouteOpen = $state(false);
   let routeCode = $state('');
@@ -60,136 +70,132 @@
     routeStatusMsg = null;
     routeLoading = true;
     try {
-      const stored = localStorage.getItem('busyahu_user');
-      const token = stored ? JSON.parse(stored).token : null;
-      const endpoints = ['/api/trains', 'http://localhost:8000/api/trains'];
-      let ok = false;
-      let msg = '';
-      for (const ep of endpoints) {
-        try {
-          const res = await fetch(ep, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
-            },
-            body: JSON.stringify({
-              code: routeCode.trim(),
-              name: routeName.trim(),
-              type: routeType.trim(),
-              countryCode: routeCountry.trim().toUpperCase(),
-              originStationId: routeOrigin.trim(),
-              destinationStationId: routeDestination.trim(),
-              departureTime: routeDeparture.trim(),
-              arrivalTime: routeArrival.trim(),
-              duration: routeDuration.trim(),
-              basePrice: Number(routePrice)
-            })
-          });
-          const data = await res.json().catch(() => ({}));
-          if (res.ok) { ok = true; msg = data.message || 'Ruta creada exitosamente.'; break; }
-          else { msg = data.detail || data.message || 'Error al crear la ruta.'; }
-        } catch {}
-      }
-      routeStatusMsg = msg || (ok ? 'Ruta creada.' : 'No se pudo conectar con el servidor.');
-      if (ok) {
-        isCreateRouteOpen = false;
-        routeCode = ''; routeName = '';
-      }
+      const payload = {
+        code: routeCode.trim(),
+        name: routeName.trim(),
+        type: routeType.trim(),
+        countryCode: routeCountry.trim().toUpperCase(),
+        originStationId: routeOrigin.trim(),
+        destinationStationId: routeDestination.trim(),
+        departureTime: routeDeparture.trim(),
+        arrivalTime: routeArrival.trim(),
+        duration: routeDuration.trim(),
+        basePrice: Number(routePrice),
+      };
+      const data = await apiGateway.createTrain(payload);
+      routeStatusMsg = String(data.message ?? 'Ruta creada exitosamente.');
+      isCreateRouteOpen = false;
+      routeCode = '';
+      routeName = '';
+      void loadCatalog();
     } catch (err: any) {
-      routeStatusMsg = err?.message || 'Error inesperado.';
+      routeStatusMsg = err?.toUserMessage?.() || err?.message || 'No se pudo conectar con el servidor.';
     } finally {
       routeLoading = false;
     }
   }
   let isUserMenuOpen = $state(false);
 
-  // Read stored user on start
-  $effect(() => {
-    try {
-      const stored = localStorage.getItem('busyahu_user');
-      if (stored) {
-        currentUser = JSON.parse(stored);
-      }
-    } catch (e) {
-      // Ignored
-    }
-  });
+  // Usuario y backend activo provienen del almacenamiento compartido con React.
+  let currentUser = $state<User | null>(readSession().user as User | null);
+  let activeBackend = $state<'express' | 'fastapi'>(getActiveBackend());
+  let health = $state<any>(apiGateway.getHealthSnapshot());
+  let lastResult = $state<any>(apiGateway.lastResult);
+  let catalogLoading = $state(false);
 
   // Core application data state
   let destinations = $state<Destination[]>(INITIAL_DESTINATIONS);
   let trains = $state<TrainRoute[]>(INITIAL_TRAIN_ROUTES);
 
-  onMount(async () => {
+  async function loadCatalog() {
+    catalogLoading = true;
     try {
-      const destRes = await fetch('/api/destinations');
-      const stationMap: Record<string, { city: string; station: string; country: string; countryCode: string; currency: string; currencySymbol: string }> = {};
-      if (destRes.ok) {
-        const destData = await destRes.json();
-        for (const d of (destData.destinations || [])) {
-          for (const s of (d.stations || [])) {
-            stationMap[s.id] = { city: s.city, station: s.name, country: d.countryName, countryCode: d.countryCode, currency: d.currency, currencySymbol: d.symbol };
-          }
-        }
-      }
-      const trainRes = await fetch('/api/trains/search');
-      if (trainRes.ok) {
-        const trainData = await trainRes.json();
-        const existingCodes = new Set(trains.map((t) => t.trainNumber));
-        const mapped: TrainRoute[] = (trainData.trains || [])
-          .filter((t: any) => !existingCodes.has(t.code))
-          .map((t: any) => {
-            const from = stationMap[t.originStationId] || {};
-            const to = stationMap[t.destinationStationId] || {};
-            return {
-              id: t.id,
-              trainNumber: t.code,
-              operator: t.name || '',
-              country: from.country || '',
-              countryCode: from.countryCode || t.countryCode || '',
-              fromCity: from.city || t.originStationId,
-              fromStation: from.station || t.originStationId,
-              toCity: to.city || t.destinationStationId,
-              toStation: to.station || t.destinationStationId,
-              departureTime: t.departureTime,
-              arrivalTime: t.arrivalTime,
-              duration: t.duration,
-              basePrice: t.basePrice,
-              carriagesCount: t.carriagesCount,
-            } as TrainRoute;
-          });
-        if (mapped.length) {
-          trains = [...mapped, ...trains];
-        }
-      }
-    } catch {
-      // Mantener datos mock si el backend no está disponible
+      const [nextDestinations, nextTrains] = await Promise.all([
+        apiGateway.getDestinations(),
+        apiGateway.getTrains(),
+      ]);
+      if (nextDestinations.length) destinations = nextDestinations as Destination[];
+      if (nextTrains.length) trains = nextTrains as TrainRoute[];
+    } catch (error) {
+      console.warn('[BusYahu] No se pudo refrescar el catálogo:', error);
+    } finally {
+      catalogLoading = false;
     }
+  }
+
+  async function handleRefreshAll() {
+    const [snapshot] = await Promise.all([apiGateway.checkAllHealth(), loadCatalog()]);
+    health = snapshot;
+  }
+
+  function handleSwitchBackend(backend: 'express' | 'fastapi') {
+    apiGateway.switchBackend(backend);
+    activeBackend = backend;
+    void loadCatalog();
+  }
+
+  function handleRetryAlternate() {
+    handleSwitchBackend(activeBackend === 'express' ? 'fastapi' : 'express');
+  }
+
+  onMount(() => {
+    setEnvironment('svelte');
+    void loadCatalog();
+    const stopHealthPolling = apiGateway.startHealthPolling((snapshot: any) => {
+      health = snapshot;
+    }, 15000);
+    const unsubscribeBackend = apiGateway.onBackendChanged((backend: 'express' | 'fastapi') => {
+      activeBackend = backend;
+      void loadCatalog();
+    });
+    const unsubscribeSession = apiGateway.onSessionChanged((session: any) => {
+      currentUser = (session.user as User | null) ?? null;
+    });
+    const unsubscribeApi = apiGateway.onApiEvent((meta: any) => {
+      lastResult = meta;
+    });
+
+    return () => {
+      stopHealthPolling();
+      unsubscribeBackend();
+      unsubscribeSession();
+      unsubscribeApi();
+    };
   });
   let issues = $state<ProjectIssue[]>(INITIAL_ISSUES);
-  let bookings = $state<Booking[]>([
-    {
-      id: 'BK-1001',
-      bookingCode: 'RW-ES-9841',
-      train: INITIAL_TRAIN_ROUTES[0], // Madrid -> Barcelona
-      travelDate: '2026-09-20',
-      passengers: [
-        {
-          fullName: 'Lucas Gómez',
-          passportId: 'PAS-459201',
-          seatId: '2-A',
-          seatClass: 'tourist',
-          price: 65,
-        },
-      ],
-      totalPrice: 65,
-      currency: 'EUR',
-      createdAt: '2026-08-14 09:30',
-      status: 'confirmed',
-      qrPayload: 'RAILWORLD:RW-ES-9841:MAD-BCN:LUCAS_GOMEZ',
-      userEmail: 'viajero@busyahurail.com',
-    },
-  ]);
+  const cachedBookings = readCachedBookings() as Booking[];
+  let bookings = $state<Booking[]>(
+    cachedBookings.length
+      ? cachedBookings
+      : [
+          {
+            id: 'BK-1001',
+            bookingCode: 'RW-ES-9841',
+            train: INITIAL_TRAIN_ROUTES[0], // Madrid -> Barcelona
+            travelDate: '2026-09-20',
+            passengers: [
+              {
+                fullName: 'Lucas Gómez',
+                passportId: 'PAS-459201',
+                seatId: '2-A',
+                seatClass: 'tourist',
+                price: 65,
+              },
+            ],
+            totalPrice: 65,
+            currency: 'EUR',
+            createdAt: '2026-08-14 09:30',
+            status: 'confirmed',
+            qrPayload: 'RAILWORLD:RW-ES-9841:MAD-BCN:LUCAS_GOMEZ',
+            userEmail: 'viajero@busyahurail.com',
+          },
+        ],
+  );
+
+  // Persistencia compartida de billetes y del billete activo.
+  $effect(() => {
+    saveCachedBookings(bookings);
+  });
 
   // Selected Booking state for checkout / confirmation
   let selectedTrain = $state<TrainRoute | null>(null);
@@ -198,8 +204,11 @@
   let selectedClassPreference = $state<'tourist' | 'first' | 'business'>('tourist');
   let activeBooking = $state<Booking | null>(null);
 
+  $effect(() => {
+    saveActiveBooking(activeBooking);
+  });
+
   // Active Multi-framework Backend selection (Express or FastAPI)
-  let activeBackend = $state<'express' | 'fastapi'>('express');
   let selectedCurrency = $state<'EUR' | 'USD' | 'GBP'>('EUR');
 
   function handleSelectTrain(
@@ -219,19 +228,23 @@
   function handleConfirmBooking(passengers: Passenger[], totalPrice: number, contactEmail?: string) {
     if (!selectedTrain) return;
 
-    const dest = destinations.find((d) => d.country.toLowerCase() === selectedTrain?.country.toLowerCase());
+    const train = selectedTrain;
+    const dest = destinations.find((d) => d.country.toLowerCase() === train.country.toLowerCase());
     const currency = dest ? dest.currency : 'EUR';
 
     // Auto-fill registered user's email if logged in
     const targetEmail = currentUser?.email || contactEmail || 'viajero@busyahurail.com';
 
-    const qrPayload = `BUSYAHU-TICKET:${selectedTrain.trainNumber}:${passengers[0]?.fullName}:${selectedTrain.fromCity}-${selectedTrain.toCity}`;
+    const qrPayload = `BUSYAHU-TICKET:${train.trainNumber}:${passengers[0]?.fullName}:${train.fromCity}-${train.toCity}`;
 
     const newBooking: Booking = {
       id: `BK-${Date.now()}`,
-      bookingCode: `RW-${selectedTrain.country.substring(0, 2).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      train: selectedTrain,
+      bookingCode: `RW-${(train.countryCode || train.country).substring(0, 2).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      train,
+      trainId: train.id,
       travelDate: selectedTravelDate,
+      date: selectedTravelDate,
+      seats: passengers.map((passenger) => passenger.seatId),
       passengers,
       totalPrice,
       currency,
@@ -242,6 +255,7 @@
       userEmail: targetEmail,
       userId: currentUser?.id,
       userDni: currentUser?.dni || passengers[0]?.passportId,
+      backend: activeBackend,
     };
 
     bookings = [newBooking, ...bookings];
@@ -249,43 +263,64 @@
     currentView = 'confirmation';
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Generar el QR funcional real desde el backend (si está disponible)
-    (async () => {
-      const endpoints = [
-        '/api/bookings/qr',
-        'http://localhost:8000/api/bookings/qr'
-      ];
-      for (const endpoint of endpoints) {
-        try {
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: qrPayload })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.qrCode) {
-              newBooking.qrCode = data.qrCode;
-              activeBooking = { ...newBooking, qrCode: data.qrCode };
-              bookings = bookings.map((b) => (b.id === newBooking.id ? { ...b, qrCode: data.qrCode } : b));
-            }
-            break;
-          }
-        } catch {
-          // Ignorar: el billete se crea de todas formas
-        }
+    // Emisión normalizada contra el backend activo, con fallback ordenado a
+    // mock y QR generado por el mismo gateway.
+    void (async () => {
+      let synchronized: Booking | null = null;
+      try {
+        synchronized = await apiGateway.createBooking({
+          trainId: train.id,
+          train,
+          travelDate: selectedTravelDate,
+          passengers,
+          totalPrice,
+          currency,
+          userEmail: targetEmail,
+        });
+      } catch (error) {
+        console.warn('[BusYahu] Reserva conservada localmente:', error);
+      }
+
+      let qrCode = '';
+      try {
+        const qr = await apiGateway.generateQr(qrPayload);
+        qrCode = qr.qrCode;
+      } catch (error) {
+        console.warn('[BusYahu] QR local sin backend:', error);
+      }
+
+      const finalBooking: Booking = {
+        ...(synchronized ?? newBooking),
+        train: synchronized?.train?.fromCity ? synchronized.train : train,
+        passengers: synchronized?.passengers?.length ? synchronized.passengers : passengers,
+        qrCode: synchronized?.qrCode || qrCode || newBooking.qrCode,
+        qrPayload: synchronized?.qrPayload || qrPayload,
+        backend: synchronized?.backend ?? activeBackend,
+      };
+
+      bookings = bookings.map((booking) =>
+        booking.id === newBooking.id ? finalBooking : booking,
+      );
+      if (activeBooking?.id === newBooking.id) {
+        activeBooking = finalBooking;
       }
     })();
   }
 
   function handleLogout() {
-    localStorage.removeItem('busyahu_user');
+    clearSession();
     currentUser = null;
     isUserMenuOpen = false;
   }
 
   function handleCancelBooking(bookingId: string) {
     bookings = bookings.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' } : b));
+    if (activeBooking?.id === bookingId) {
+      activeBooking = { ...activeBooking, status: 'cancelled' };
+    }
+    void apiGateway.cancelBooking(bookingId).catch((error) => {
+      console.warn('[BusYahu] Cancelación local:', error);
+    });
   }
 
   function handleViewTicket(booking: Booking) {
@@ -476,6 +511,17 @@
     </div>
   </header>
 
+  <!-- Panel de conectividad e interoperabilidad (Issue #11) -->
+  <ConnectivityHub
+    {activeBackend}
+    {health}
+    {lastResult}
+    loading={catalogLoading}
+    onSwitchBackend={handleSwitchBackend}
+    onRefresh={handleRefreshAll}
+    onRetryAlternate={handleRetryAlternate}
+  />
+
   <!-- Account Top CTA Strip for Visitors -->
   {#if !currentUser}
     <div class="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-950 text-slate-200 border-b border-indigo-900/60 text-xs py-2 px-4 shadow-inner">
@@ -520,7 +566,6 @@
         travelDate={selectedTravelDate}
         passengerCount={selectedPassengerCount}
         initialClass={selectedClassPreference}
-        {currentUser}
         onBack={() => (currentView = 'search')}
         onConfirmBooking={handleConfirmBooking}
         currencySymbol={destinations.find((d) => d.country.toLowerCase() === selectedTrain?.country.toLowerCase())?.currencySymbol || '€'}
@@ -535,8 +580,6 @@
     {:else if currentView === 'my_bookings'}
       <MyBookingsView
         {bookings}
-        {currentUser}
-        onOpenAuthModal={() => (isAuthModalOpen = true)}
         onCancelBooking={handleCancelBooking}
         onViewTicket={handleViewTicket}
         onGoToSearch={() => (currentView = 'search')}
@@ -630,7 +673,6 @@
     <ProjectManagementView
       {issues}
       onUpdateIssueStatus={handleUpdateIssueStatus}
-      onClose={() => (isDocsDrawerOpen = false)}
     />
   {/if}
 

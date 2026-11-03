@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/db';
 import authRoutes from './routes/auth.routes';
 import trainRoutes from './routes/trains.routes';
+import bookingRoutes from './routes/bookings.routes';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
+app.use('/api/bookings', bookingRoutes);
 app.use('/api', trainRoutes); // Expone /api/destinations y /api/trains/*
 
 async function start() {

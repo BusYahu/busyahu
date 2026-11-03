@@ -21,6 +21,7 @@
     Mail
   } from 'lucide-svelte';
   import type { User } from '../types';
+  import { readSearchFilters, saveSearchFilters } from '../lib/storage.js';
 
   interface Props {
     destinations: Destination[];
@@ -53,9 +54,40 @@
   let timeFilter = $state<'all' | 'morning' | 'afternoon' | 'evening'>('all');
   let sortBy = $state<'price_asc' | 'duration_asc' | 'departure_asc'>('price_asc');
 
+  // Filtros compartidos con React y persistentes entre recargas / backends.
+  const storedFilters = readSearchFilters();
+  if (storedFilters.countryId) selectedCountryId = String(storedFilters.countryId);
+  if (storedFilters.fromCity) fromCity = String(storedFilters.fromCity);
+  if (storedFilters.toCity) toCity = String(storedFilters.toCity);
+  if (storedFilters.travelDate) travelDate = String(storedFilters.travelDate);
+  if (storedFilters.passengerCount) passengerCount = Number(storedFilters.passengerCount);
+  if (storedFilters.selectedClass) selectedClassTier = storedFilters.selectedClass;
+
+  $effect(() => {
+    saveSearchFilters({
+      countryId: selectedCountryId,
+      fromCity,
+      toCity,
+      travelDate,
+      passengerCount,
+      selectedClass: selectedClassTier,
+    });
+  });
+
   let currentDestination = $derived(
     destinations.find((d) => d.id === selectedCountryId) || destinations[0]
   );
+
+  $effect(() => {
+    const cities = currentDestination?.cities ?? [];
+    if (!cities.length) return;
+    if (!cities.some((city) => city.name === fromCity)) {
+      fromCity = cities[0].name;
+    }
+    if (!cities.some((city) => city.name === toCity)) {
+      toCity = cities[1]?.name || cities[0].name;
+    }
+  });
 
   let currentCurrencySymbol = $derived(
     currentDestination?.currencySymbol || '€'

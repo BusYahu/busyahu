@@ -29,7 +29,20 @@ app = FastAPI(
 )
 
 # Configuración de CORS
-origins = ["*"] if settings.CORS_ORIGIN == "*" else [origin.strip() for origin in settings.CORS_ORIGIN.split(",")]
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+]
+
+# Si settings.CORS_ORIGIN tiene valores adicionales, los sumamos
+if settings.CORS_ORIGIN and settings.CORS_ORIGIN != "*":
+    origins.extend([origin.strip() for origin in settings.CORS_ORIGIN.split(",")])
 
 app.add_middleware(
     CORSMiddleware,

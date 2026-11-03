@@ -8,6 +8,7 @@ export interface Destination {
   cities: {
     name: string;
     station: string;
+    stationId?: string;
   }[];
 }
 
@@ -27,6 +28,7 @@ export interface TrainRoute {
   trainNumber: string;
   operator: string;
   country: string;
+  countryCode?: string;
   fromCity: string;
   fromStation: string;
   toCity: string;
@@ -54,14 +56,19 @@ export interface Booking {
   id: string;
   bookingCode: string;
   train: TrainRoute;
+  trainId?: string;
   travelDate: string;
+  date?: string;
+  seats?: string[];
   passengers: Passenger[];
   totalPrice: number;
   currency: string;
   createdAt: string;
   status: 'confirmed' | 'cancelled';
   qrPayload?: string;   // <-- ¡Esto quita el rojo de qrPayload!
+  qrCode?: string;
   userEmail?: string;
+  backend?: 'express' | 'fastapi' | 'mock';
 }
 
 // ⚡ AQUÍ ESTÁ EL ARREGLO DE LA IMAGEN 1:

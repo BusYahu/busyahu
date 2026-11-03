@@ -64,6 +64,19 @@ def _train_to_search_item(doc: dict, date: Optional[str]) -> TrainSearchItem:
 
 
 @router.get(
+    "",
+    response_model=TrainSearchResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Catálogo completo de trenes",
+    description="Alias de /api/trains/search sin filtros, con paridad total sobre Express para la conmutación de backends (feat/issue-11)."
+)
+async def list_trains(
+    date: Optional[str] = Query(None, description="Fecha de viaje (YYYY-MM-DD)"),
+):
+    return await search_trains(from_=None, to=None, country=None, date=date)
+
+
+@router.get(
     "/search",
     response_model=TrainSearchResponse,
     status_code=status.HTTP_200_OK,

@@ -8,6 +8,7 @@ export interface Destination {
   cities: {
     name: string;
     station: string;
+    stationId?: string;
   }[];
 }
 
@@ -27,6 +28,7 @@ export interface TrainRoute {
   trainNumber: string;
   operator: string;
   country: string;
+  countryCode?: string;
   fromCity: string;
   fromStation: string;
   toCity: string;
@@ -53,7 +55,10 @@ export interface Booking {
   id: string;
   bookingCode: string;
   train: TrainRoute;
+  trainId?: string;
   travelDate: string;
+  date?: string;
+  seats?: string[];
   passengers: Passenger[];
   totalPrice: number;
   currency: string;
@@ -62,6 +67,9 @@ export interface Booking {
   qrPayload: string;
   qrCode?: string;
   userEmail: string;
+  userId?: string;
+  userDni?: string;
+  backend?: 'express' | 'fastapi' | 'mock';
 }
 
 export interface User {
@@ -70,6 +78,10 @@ export interface User {
   name: string;
   role: 'client' | 'admin';
   token?: string;
+  firstName?: string;
+  lastName?: string;
+  dni?: string;
+  isVerified?: boolean;
 }
 
 export interface ProjectIssue {

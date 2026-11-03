@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Booking } from '../types';
+  import { apiGateway } from '../lib/api.js';
   import { 
     Calendar, 
     Trash2, 
@@ -47,25 +48,13 @@
       if (booking.qrCode || qrMap[booking.id]) continue;
       const payload = booking.qrPayload || booking.bookingCode;
       (async () => {
-        const endpoints = [
-          '/api/bookings/qr',
-          'http://localhost:8000/api/bookings/qr'
-        ];
-        for (const ep of endpoints) {
-          try {
-            const res = await fetch(ep, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ data: payload })
-            });
-            if (res.ok) {
-              const d = await res.json();
-              if (d?.qrCode) {
-                qrMap[booking.id] = d.qrCode;
-              }
-              break;
-            }
-          } catch {}
+        try {
+          const result = await apiGateway.generateQr(payload);
+          if (result.qrCode) {
+            qrMap[booking.id] = result.qrCode;
+          }
+        } catch {
+          // Sin backend: el billete sigue visible sin QR.
         }
       })();
     }

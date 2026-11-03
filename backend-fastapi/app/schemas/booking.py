@@ -1,5 +1,5 @@
 from typing import List, Literal, Optional, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from app.schemas.train import TrainSummary
 
 
@@ -14,8 +14,23 @@ class PassengerItem(BaseModel):
     fullName: str = Field(..., description="Nombre completo del pasajero", example="Lucas Gómez")
     passportId: str = Field(..., description="DNI o Pasaporte", example="PAS-459201")
     seatId: str = Field(..., description="Código del asiento reservado", example="1-1A")
-    seatClass: Literal["First", "Standard"] = Field(default="Standard", description="Clase de asiento", example="Standard")
+    seatClass: Literal["First", "Standard", "Business"] = Field(default="Standard", description="Clase de asiento", example="Standard")
     price: float = Field(..., description="Precio del billete individual", example=91.7)
+
+    @field_validator("seatClass", mode="before")
+    @classmethod
+    def canonical_seat_class(cls, value):
+        """Acepta 'first'/'business'/'standard' y los canonicaliza igual que Express."""
+        if value is None:
+            return "Standard"
+        normalized = str(value).strip().lower()
+        if normalized == "first":
+            return "First"
+        if normalized == "business":
+            return "Business"
+        if normalized == "standard":
+            return "Standard"
+        return value
 
 
 class BookingCreateRequest(BaseModel):

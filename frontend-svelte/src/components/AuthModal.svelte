@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { User } from '../types';
+  import { apiGateway, ApiError } from '../lib/api.js';
+  import { readSession, saveSession } from '../lib/storage.js';
   import { 
     X, Mail, Lock, CreditCard, ShieldCheck, Clock, ArrowRight, CheckCircle2, AlertCircle, RefreshCw
   } from 'lucide-svelte';
@@ -29,6 +31,23 @@
   let isLoading = $state(false);
   let errorMessage = $state<string | null>(null);
   let successMessage = $state<string | null>(null);
+
+  function errorText(error: unknown): string {
+    if (error instanceof ApiError) return error.toUserMessage();
+    if (error instanceof Error) return error.message;
+    return 'Error inesperado al comunicarse con el backend.';
+  }
+
+  function completeLogin(user: User | null) {
+    if (!user) {
+      errorMessage = 'El backend no devolvió datos de usuario.';
+      return false;
+    }
+    saveSession(user, apiGateway.getToken());
+    onLoginSuccess(user);
+    onClose();
+    return true;
+  }
 
   // 10-Minute Countdown Timer
   $effect(() => {
@@ -68,67 +87,36 @@
     isLoading = true;
 
     try {
-      const endpoints = [
-        '/api/auth/register-request',
-        'http://localhost:8000/api/auth/register-request',
-        '/api/auth/register',
-        'http://localhost:8000/api/auth/register'
-      ];
+      const result = await apiGateway.registerRequest({
+        name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        dni: dni.trim(),
+      });
 
-      let resData: any = null;
-      let lastErrorMessage = '';
-
-      for (const endpoint of endpoints) {
-        try {
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: `${firstName.trim()} ${lastName.trim()}`.trim(),
-              firstName: firstName.trim(),
-              lastName: lastName.trim(),
-              email: email.trim().toLowerCase(),
-              password,
-              dni: dni.trim()
-            })
-          });
-
-          if (res.ok) {
-            resData = await res.json();
-            break;
-          } else if (res.status === 404) {
-            continue;
-          } else {
-            const err = await res.json().catch(() => ({}));
-            let msg = '';
-            if (typeof err.detail === 'string') {
-              msg = err.detail;
-            } else if (Array.isArray(err.detail)) {
-              msg = err.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
-            } else if (err.message) {
-              msg = err.message;
-            }
-            if (msg && !msg.toLowerCase().includes('not found')) {
-              lastErrorMessage = msg;
-              errorMessage = msg;
-              isLoading = false;
-              return;
-            }
-          }
-        } catch {
-          // Network error or endpoint down, try next
-        }
+      if (result.user) {
+        const user = {
+          ...result.user,
+          firstName: result.user.firstName || firstName.trim(),
+          lastName: result.user.lastName || lastName.trim(),
+          dni: result.user.dni || dni.trim(),
+          isVerified: true,
+        } as User;
+        completeLogin(user);
+        return;
       }
 
-      if (resData && resData.success) {
+      if (result.requiresVerification) {
         mode = 'verify';
-        timeLeftSeconds = 600; // 10 minutes reset
-        successMessage = '¡Código de verificación enviado! Revisa tu bandeja de entrada o spam.';
+        timeLeftSeconds = 600;
+        successMessage = result.message || '¡Código de verificación enviado! Revisa tu bandeja de entrada o spam.';
       } else {
-        errorMessage = lastErrorMessage || 'No se pudo conectar con el servidor para despachar el correo de verificación.';
+        errorMessage = result.message || 'No se pudo completar el registro.';
       }
-    } catch (e: any) {
-      errorMessage = e?.message || 'Error inesperado al solicitar el código de verificación.';
+    } catch (error) {
+      errorMessage = errorText(error);
     } finally {
       isLoading = false;
     }
@@ -152,70 +140,17 @@
     isLoading = true;
 
     try {
-      const endpoints = [
-        '/api/auth/verify-code',
-        'http://localhost:8000/api/auth/verify-code'
-      ];
-
-      let userCreated: User | null = null;
-
-      for (const endpoint of endpoints) {
-        try {
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: email.trim().toLowerCase(),
-              code: verificationCode.trim()
-            })
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            userCreated = {
-              id: data.id,
-              email: data.email,
-              name: data.name || `${firstName} ${lastName}`,
-              firstName: data.firstName || firstName,
-              lastName: data.lastName || lastName,
-              dni: data.dni || dni,
-              role: data.role || 'client',
-              isVerified: true,
-              token: data.token || data.access_token
-            };
-            break;
-          } else if (res.status === 404) {
-            continue;
-          } else {
-            const err = await res.json().catch(() => ({}));
-            let msg = '';
-            if (typeof err.detail === 'string') {
-              msg = err.detail;
-            } else if (Array.isArray(err.detail)) {
-              msg = err.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
-            } else if (err.message) {
-              msg = err.message;
-            }
-            if (msg && !msg.toLowerCase().includes('not found')) {
-              errorMessage = msg;
-              isLoading = false;
-              return;
-            }
-          }
-        } catch {
-          // Try next
-        }
-      }
-
-      if (userCreated) {
-        localStorage.setItem('busyahu_user', JSON.stringify(userCreated));
-        onLoginSuccess(userCreated);
-        onClose();
-      } else {
-        errorMessage = errorMessage || 'Código de verificación incorrecto o expirado.';
-      }
-    } catch {
-      errorMessage = 'Error al validar el código con el servidor.';
+      const result = await apiGateway.verifyCode(email.trim().toLowerCase(), verificationCode.trim());
+      const user = {
+        ...(result.user ?? {}),
+        firstName: result.user?.firstName || firstName.trim(),
+        lastName: result.user?.lastName || lastName.trim(),
+        dni: result.user?.dni || dni.trim(),
+        isVerified: true,
+      } as User;
+      completeLogin(user);
+    } catch (error) {
+      errorMessage = errorText(error);
     } finally {
       isLoading = false;
     }
@@ -227,20 +162,11 @@
     errorMessage = null;
     successMessage = null;
     try {
-      const res = await fetch('/api/auth/resend-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase() })
-      });
-      if (res.ok) {
-        timeLeftSeconds = 600;
-        successMessage = '¡Nuevo código enviado! Revisa tu bandeja de entrada o spam.';
-      } else {
-        const err = await res.json().catch(() => ({}));
-        errorMessage = err.detail || 'No se pudo reenviar el código de verificación.';
-      }
-    } catch {
-      errorMessage = 'Error de conexión al reenviar el código.';
+      const result = await apiGateway.resendCode(email.trim().toLowerCase());
+      timeLeftSeconds = 600;
+      successMessage = result.message || '¡Nuevo código enviado! Revisa tu bandeja de entrada o spam.';
+    } catch (error) {
+      errorMessage = errorText(error);
     } finally {
       isLoading = false;
     }
@@ -253,60 +179,29 @@
     isLoading = true;
 
     try {
-      const endpoints = [
-        '/api/auth/login',
-        'http://localhost:8000/api/auth/login'
-      ];
-
-      let userLogged: User | null = null;
-
-      for (const endpoint of endpoints) {
-        try {
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: email.trim().toLowerCase(),
-              password
-            })
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            userLogged = {
-              id: data.id,
-              email: data.email,
-              name: data.name,
-              firstName: data.firstName || data.name.split(' ')[0] || '',
-              lastName: data.lastName || data.name.split(' ')[1] || '',
-              dni: data.dni || '49132732',
-              role: data.role || 'client',
-              isVerified: true,
-              token: data.token || data.access_token
-            };
-            break;
-          }
-        } catch {}
-      }
-
-      if (userLogged) {
-        localStorage.setItem('busyahu_user', JSON.stringify(userLogged));
-        onLoginSuccess(userLogged);
+      const result = await apiGateway.login(email.trim().toLowerCase(), password);
+      const normalizedEmail = email.trim().toLowerCase();
+      const stored = readSession().user;
+      const previous = stored?.email === normalizedEmail ? stored : null;
+      const user = {
+        ...(result.user ?? {}),
+        firstName: result.user?.firstName || result.user?.name?.split(' ')[0] || previous?.firstName || '',
+        lastName: result.user?.lastName || result.user?.name?.split(' ').slice(1).join(' ') || previous?.lastName || '',
+        dni: result.user?.dni || previous?.dni || '49132732',
+        isVerified: true,
+      } as User;
+      completeLogin(user);
+    } catch (error) {
+      // Resiliencia offline: si ya existía una sesión local para ese correo,
+      // permitimos continuar sin romper la interfaz.
+      const normalizedEmail = email.trim().toLowerCase();
+      const stored = readSession().user;
+      if (stored && stored.email === normalizedEmail) {
+        onLoginSuccess(stored);
         onClose();
       } else {
-        const stored = localStorage.getItem('busyahu_user');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed.email === email.trim().toLowerCase()) {
-            onLoginSuccess(parsed);
-            onClose();
-            return;
-          }
-        }
-        errorMessage = 'Credenciales inválidas. Verifica tu correo y contraseña.';
+        errorMessage = errorText(error);
       }
-    } catch {
-      errorMessage = 'Error al conectar con el servidor.';
     } finally {
       isLoading = false;
     }
