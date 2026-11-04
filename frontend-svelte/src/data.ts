@@ -157,6 +157,31 @@ export const INITIAL_DESTINATIONS: Destination[] = [
   },
 ];
 
+// Tasas de cambio aproximadas (base EUR) para la conversión visual de divisas
+export const CURRENCY_RATES: Record<string, number> = {
+  EUR: 1,
+  USD: 1.08,
+  GBP: 0.85,
+  CAD: 1.47,
+  RUB: 98.5,
+  CNY: 7.85,
+  INR: 90.5,
+  JPY: 162.0,
+};
+
+export function convertCurrency(amount: number, from: string, to: string): number {
+  const fromRate = CURRENCY_RATES[from] || 1;
+  const toRate = CURRENCY_RATES[to] || 1;
+  return (amount / fromRate) * toRate;
+}
+
+export function currencySymbol(code: string): string {
+  const map: Record<string, string> = {
+    EUR: '€', USD: '$', GBP: '£', CAD: 'CA$', RUB: '₽', CNY: '¥', INR: '₹', JPY: '¥',
+  };
+  return map[code] || code;
+}
+
 export const INITIAL_TRAIN_ROUTES: TrainRoute[] = [
   // España
   {

@@ -99,7 +99,8 @@ def create_wallet_pass(booking):
 
     featured_actions = []
     place_id = _resolve_place_id(train)
-    origin_query = (from_city or "").strip()
+    origin_station_name = (train.get("fromStation") or train.get("from_station") or "").strip()
+    origin_query = (origin_station_name + " " + (from_city or "")).strip() or (from_city or "").strip()
     if place_id:
         ga_url = "https://www.google.com/maps/search/?api=1&query=" + urllib.parse.quote(origin_query or from_city or "")
         featured_actions.append({

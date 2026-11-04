@@ -148,7 +148,9 @@
               booking,
               platform,
               originCity: booking?.train?.fromCity,
-              destinationCity: booking?.train?.toCity
+              destinationCity: booking?.train?.toCity,
+              originStation: booking?.train?.fromStation,
+              destinationStation: booking?.train?.toStation
             })
           });
           if (res.ok) {
@@ -237,7 +239,7 @@
   </div>
 
   <!-- Real Email Dispatch Status Widget -->
-  <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3 print:hidden">
+  <div class="glass rounded-3xl shadow-lg p-5 space-y-3 print:hidden">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <Mail class="w-5 h-5 text-indigo-600" />
@@ -298,7 +300,7 @@
   </div>
 
   <!-- Boarding Pass Layout -->
-  <div class="bg-white border-2 border-slate-300 rounded-3xl overflow-hidden shadow-xl print:border-none print:shadow-none">
+  <div class="glass rounded-3xl overflow-hidden shadow-xl border border-white/40 print:border-none print:shadow-none">
     <!-- Header -->
     <div class="bg-slate-950 text-white p-6 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-3">

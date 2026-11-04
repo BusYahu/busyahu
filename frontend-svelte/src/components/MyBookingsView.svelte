@@ -96,7 +96,7 @@
   </div>
 
   {#if bookings.length === 0}
-    <div class="bg-white border border-slate-200 rounded-3xl p-12 text-center space-y-4 shadow-sm">
+    <div class="glass rounded-3xl shadow-lg p-12 text-center space-y-4 shadow-sm">
       <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
         <Ticket class="w-7 h-7" />
       </div>
@@ -123,7 +123,7 @@
         {@const qrSrc = booking.qrCode || qrMap[booking.id]}
 
         <div
-          class="bg-white border rounded-2xl p-5 sm:p-6 shadow-sm transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-6 {isCancelled || isExpired ? 'border-slate-200 bg-slate-50/70 opacity-70' : 'border-slate-200 hover:border-slate-300'}"
+          class="glass rounded-3xl shadow-lg p-5 sm:p-6 transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-6 {isCancelled || isExpired ? 'border-slate-200 bg-slate-50/70 opacity-70' : 'border-slate-200 hover:border-slate-300'}"
         >
           <!-- Route details -->
           <div class="space-y-3 flex-1">

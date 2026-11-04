@@ -372,6 +372,8 @@ async def generate_wallet_from_data(payload: dict):
     platform = (payload.get("platform") or "both").lower()
     origin_city = (payload.get("originCity") or payload.get("origin_city") or booking.get("originCity") or "").strip() or None
     destination_city = (payload.get("destinationCity") or payload.get("destination_city") or booking.get("destinationCity") or "").strip() or None
+    origin_station = (payload.get("originStation") or payload.get("origin_station") or booking.get("originStation") or "").strip() or None
+    destination_station = (payload.get("destinationStation") or payload.get("destination_station") or booking.get("destinationStation") or "").strip() or None
     place_identifier = (payload.get("placeIdentifier") or payload.get("place_id") or payload.get("applePlaceId") or "").strip() or None
 
     train = dict(booking.get("train") or {})
@@ -379,6 +381,10 @@ async def generate_wallet_from_data(payload: dict):
         train["fromCity"] = origin_city
     if destination_city:
         train["toCity"] = destination_city
+    if origin_station:
+        train["fromStation"] = origin_station
+    if destination_station:
+        train["toStation"] = destination_station
     if place_identifier:
         train["applePlaceId"] = place_identifier
     booking["train"] = train

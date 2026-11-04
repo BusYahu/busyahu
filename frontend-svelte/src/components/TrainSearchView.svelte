@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Destination, TrainRoute } from '../types';
+  import { convertCurrency, currencySymbol } from '../data';
   import { 
     Search, 
     Train, 
@@ -27,6 +28,7 @@
     trains: TrainRoute[];
     activeBackend?: 'express' | 'fastapi';
     currentUser?: User | null;
+    selectedCurrency?: string;
     onSelectTrain: (train: TrainRoute, travelDate: string, passengerCount: number, selectedClass?: 'tourist' | 'first' | 'business') => void;
     onToggleBackend?: (backend: 'express' | 'fastapi') => void;
     onOpenProjectDocs?: () => void;
@@ -38,6 +40,7 @@
     trains = [], 
     activeBackend = 'express', 
     currentUser = null,
+    selectedCurrency = 'EUR',
     onSelectTrain, 
     onToggleBackend,
     onOpenProjectDocs,
@@ -58,7 +61,7 @@
   );
 
   let currentCurrencySymbol = $derived(
-    currentDestination?.currencySymbol || '€'
+    currencySymbol(selectedCurrency) || currentDestination?.currencySymbol || '€'
   );
 
   function handleCountryChange(countryId: string) {
@@ -120,7 +123,7 @@
     <!-- Cinematic Backdrop Image -->
     <div class="absolute inset-0 pointer-events-none">
       <img
-        src="/src/assets/images/hero_highspeed_train_1791381943799.jpg"
+        src="/imgs/costa_mediterranea_bcn.jpg"
         alt="Tren de alta velocidad en paisaje europeo"
         class="w-full h-full object-cover object-center opacity-40 brightness-75 scale-105"
         referrerpolicy="no-referrer"
@@ -446,7 +449,7 @@
       <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
         <div class="relative h-48 overflow-hidden bg-slate-100">
           <img
-            src="/src/assets/images/dest_barcelona_coast_1791381953516.jpg"
+            src="/imgs/costa_mediterranea_bcn.jpg"
             alt="Costa Mediterránea en tren de alta velocidad"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             referrerpolicy="no-referrer"
@@ -484,7 +487,7 @@
       <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
         <div class="relative h-48 overflow-hidden bg-slate-100">
           <img
-            src="/src/assets/images/train_luxury_interior_1791381964518.jpg"
+            src="/imgs/tren_inoui_paris_lyon_marsella.jpg"
             alt="Interior de cabina de primera clase en tren"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             referrerpolicy="no-referrer"
@@ -520,20 +523,23 @@
 
       <!-- Card 3 -->
       <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
-        <div class="relative h-48 overflow-hidden bg-slate-900 flex items-center justify-center text-white">
-          <div class="absolute inset-0 bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 opacity-90"></div>
-          <div class="relative z-10 text-center p-6 space-y-2">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 flex items-center justify-center mx-auto">
-              <Train class="w-6 h-6" />
-            </div>
-            <div class="text-lg font-black tracking-tight">Shinkansen Nozomi</div>
-            <div class="text-xs text-indigo-200">Puntualidad milimétrica en Japón</div>
-          </div>
+        <div class="relative h-48 overflow-hidden bg-slate-100">
+          <img
+            src="/imgs/tren_tokio_a_kioto.jpg"
+            alt="Shinkansen Nozomi, tren de alta velocidad en Japón"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            referrerpolicy="no-referrer"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
           <div class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-full">
             🇯🇵 Japón · JR Central
           </div>
           <div class="absolute bottom-3 right-3 bg-white text-slate-900 font-extrabold text-xs px-2.5 py-1 rounded-lg shadow">
             Desde 13.800¥
+          </div>
+          <div class="absolute bottom-3 left-3 text-white">
+            <div class="text-lg font-black tracking-tight drop-shadow">Shinkansen Nozomi</div>
+            <div class="text-xs text-white/90 drop-shadow">Puntualidad milimétrica en Japón</div>
           </div>
         </div>
         <div class="p-5 space-y-3">
@@ -645,9 +651,9 @@
     {:else}
       <div class="space-y-4">
         {#each filteredTrains as train (train.id)}
-          {@const touristPrice = train.basePrice}
-          {@const firstPrice = Math.round(train.basePrice * 1.4)}
-          {@const businessPrice = Math.round(train.basePrice * 1.8)}
+          {@const touristPrice = Math.round(convertCurrency(train.basePrice, currentDestination?.currency || 'EUR', selectedCurrency))}
+          {@const firstPrice = Math.round(convertCurrency(train.basePrice * 1.4, currentDestination?.currency || 'EUR', selectedCurrency))}
+          {@const businessPrice = Math.round(convertCurrency(train.basePrice * 1.8, currentDestination?.currency || 'EUR', selectedCurrency))}
 
           <div class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all p-5 sm:p-6">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
