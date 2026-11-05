@@ -178,8 +178,8 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 
 | Criterio | Resultado actual | Meta | Brecha | Cómo alcanzarlo |
 |---|---|---|---|---|
-| Índice de calidad de servicios (indice) | índice **20/100** | mínimo 50 | faltan 30 pts | El índice sólo penaliza lo que **excede** los umbrales de cada criterio: si tenés todo en verde, el índice es 100. Si está en rojo, mirá los hallazgos del anexo (archivo y línea) y corregí primero duplicación, SEC, SQL y capas. Meta del perfil exigente: ≥50. |
-| Duplicación (DRY) (duplicacion) | **23.1%** de duplicación | máximo 15% | sobran 8.1 pts | Ubicá los bloques repetidos (el anexo lista los archivos), llevá la lógica común a una función o módulo compartido y hacé que todos lo usen. Cada copia eliminada baja el porcentaje; meta ≤15%. |
+| Índice de calidad de servicios (indice) | índice **20/100** | mínimo 50 | faltan 30 pts | El índice sólo penaliza lo que **excede** los umbrales de cada criterio: si tenés todo en verde, el índice es 100. Si está en rojo, mirá la columna **Brecha** y los criterios en rojo; corregí primero duplicación, SEC, SQL y capas. Meta del perfil exigente: ≥50. |
+| Duplicación (DRY) (duplicacion) | **23.1%** de duplicación | máximo 15% | sobran 8.1 pts | Ubicá los bloques repetidos con `jscpd` o SonarQube, llevá la lógica común a una función o módulo compartido y hacé que todos lo usen. Cada copia eliminada baja el porcentaje; meta ≤15%. |
 | Acceso a datos dentro del componente (HTTP) | **1** llamada(s) a la API dentro de componente(s) | máximo 0 | 1 caso(s) a eliminar | Creá una capa de servicios/API (un módulo por recurso) que centralice `fetch`/`axios` y consumila desde los componentes; así el acceso a datos deja de estar duplicado en las vistas. Meta: 0 casos. |
 | Depuración olvidada (DBG) | **6** mensaje(s) de depuración olvidado(s) | máximo 0 | 6 caso(s) a eliminar | Borrá `console.log`/`print`/`debugger` del código de producción. Si necesitás registro, usá el logger del proyecto con el nivel adecuado. Meta: 0 casos. |
 | Componente demasiado grande (BigC) | **18** componente(s) demasiado grande(s) | máximo 1 | 17 componente(s) de más | Dividí el componente por responsabilidad en subcomponentes (render, estado, acceso a datos) y dejá el original sólo como orquestador. Meta: ≤1 componente grande. |
@@ -187,6 +187,8 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 | Cobertura de tests (Cob) | **no medible** (sin tests, sin runner o sin artefacto de cobertura) | mínimo 80% de líneas | no medible: generá el artefacto o corré la suite | Agregá o ampliá tests que ejecuten los módulos sin cubrir (camino principal y errores) y publicá el artefacto (`coverage/lcov.info`, `coverage-summary.json`, `coverage.xml` o `coverage.json`) o corré la suite con coverage. Meta: ≥80% de líneas. |
 
 > Empezá por las señales de seguridad (**SEC**, **SQL**) y por la **duplicación**: son las que más pesan en el índice y las más rápidas de verificar a ojo. Después de corregir, volvé a correr la medición: el semáforo se recalcula sobre `main`.
+
+> **Tests (informativo):** hoy tenés **1** archivo(s) de test; la meta es **5**, pero **no** es una compuerta del semáforo. Para acercarte, agregá tests de los flujos principales (servicios y endpoints) y corré la suite con coverage.
 
 ## 6. Anexo: dónde mirar
 
