@@ -3,7 +3,7 @@
 
 > Documento **generado automáticamente** por la cátedra de Programación III (RepoSense + análisis de calidad + constancia). **No editar a mano**: se regenera en cada evaluación.
 > Rama evaluada: `main`. Análisis **heurístico** (regex + métricas): es una criba para orientar la revisión, **no una nota**.
-> Generado: 2026-11-05.
+> Generado: 2026-11-06.
 
 ## 1. Veredicto
 
@@ -154,7 +154,8 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 - **Qué mide:** Porcentaje de líneas de código ejecutadas por la suite de tests (cobertura real, no cantidad de archivos de test).
 - **Por qué importa:** Un test que existe pero no ejecuta el código no protege de nada: la cobertura muestra qué partes quedan sin verificar.
-- **Tu resultado:** **no medible** (sin tests, sin runner o sin artefacto de cobertura) _(mínimo 80% de líneas)_
+- **Tu resultado:** **no medible** — backend-fastapi: pytest no generó cobertura: INTERNALERROR> File "/neipieng0Kolo5ei/workspaces/etec-programacion3/.cache-cobertura/BusYahu__busyahu@main/backend-fastapi/test_smtp.py", line 149, in <module> · INTERNALERROR> sys.exit(1) · INTERNALERROR> SystemExit: 1 _(mínimo 80% de líneas)_
+- **Causa detectada:** backend-fastapi: pytest no generó cobertura: INTERNALERROR> File "/neipieng0Kolo5ei/workspaces/etec-programacion3/.cache-cobertura/BusYahu__busyahu@main/backend-fastapi/test_smtp.py", line 149, in <module> · INTERNALERROR> sys.exit(1) · INTERNALERROR> SystemExit: 1
 - **Para investigar la causa:**
     - ¿Qué módulos o ramas del sistema nunca se ejecutan en los tests?
     - ¿Los tests prueban el camino principal y los errores, o solo el caso feliz?
@@ -184,7 +185,7 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 | Depuración olvidada (DBG) | **6** mensaje(s) de depuración olvidado(s) | máximo 0 | 6 caso(s) a eliminar | Borrá `console.log`/`print`/`debugger` del código de producción. Si necesitás registro, usá el logger del proyecto con el nivel adecuado. Meta: 0 casos. |
 | Componente demasiado grande (BigC) | **18** componente(s) demasiado grande(s) | máximo 1 | 17 componente(s) de más | Dividí el componente por responsabilidad en subcomponentes (render, estado, acceso a datos) y dejá el original sólo como orquestador. Meta: ≤1 componente grande. |
 | Baja cohesión (Coh) | **4** unidad(es) con baja cohesión | máximo 0 | 4 clase(s) a separar | Separá la clase en unidades con una sola responsabilidad: si los métodos cambian por motivos distintos, son clases distintas. Meta: 0 clases con baja cohesión. |
-| Cobertura de tests (Cob) | **no medible** (sin tests, sin runner o sin artefacto de cobertura) | mínimo 80% de líneas | no medible: generá el artefacto o corré la suite | Agregá o ampliá tests que ejecuten los módulos sin cubrir (camino principal y errores) y publicá el artefacto (`coverage/lcov.info`, `coverage-summary.json`, `coverage.xml` o `coverage.json`) o corré la suite con coverage. Meta: ≥80% de líneas. |
+| Cobertura de tests (Cob) | **no medible** — backend-fastapi: pytest no generó cobertura: INTERNALERROR> File "/neipieng0Kolo5ei/workspaces/etec-programacion3/.cache-cobertura/BusYahu__busyahu@main/backend-fastapi/test_smtp.py", line 149, in <module> · INTERNALERROR> sys.exit(1) · INTERNALERROR> SystemExit: 1 | mínimo 80% de líneas | no medible: generá el artefacto o corré la suite | Revisá que la suite corra en un clon limpio (sin base de datos ni servicios externos) y que las dependencias de test estén declaradas. Agregá o ampliá tests que ejecuten los módulos sin cubrir (camino principal y errores) y publicá el artefacto (`coverage/lcov.info`, `coverage-summary.json`, `coverage.xml` o `coverage.json`) o corré la suite con coverage. Meta: ≥80% de líneas. |
 
 > Empezá por las señales de seguridad (**SEC**, **SQL**) y por la **duplicación**: son las que más pesan en el índice y las más rápidas de verificar a ojo. Después de corregir, volvé a correr la medición: el semáforo se recalcula sobre `main`.
 
