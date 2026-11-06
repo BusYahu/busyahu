@@ -114,6 +114,17 @@ La aplicación React incluye una portada comercial orientada al pasajero final:
 
 El acceso a `/admin` conserva el control RBAC: un usuario con rol `client` recibe **HTTP 403** y puede elevarse a administrador desde la misma pantalla de acceso restringido.
 
+### Personalizar imágenes, banderas y logos
+
+- **Fotos del hero:** se editan en `frontend-react/src/data/landing.ts`, dentro de `HERO_SLIDES`. Cada objeto tiene `image`, `alt` y un `imagePosition` opcional que equivale a CSS `object-position`.
+  - `'center'` centra el encuadre.
+  - `'center 20%'` muestra más la parte superior de la foto; `'center 80%'` muestra más la parte inferior.
+  - `'left center'` y `'right center'` desplazan el encuadre hacia la izquierda o derecha.
+  - También se aceptan valores combinados como `'30% 70%'`.
+- **Banderas:** son SVG locales en `frontend-react/public/flags/`. El componente `src/components/landing/Flag.tsx` traduce el código ISO (`ES`, `FR`, `GB`…) al archivo correspondiente. Para reemplazar una bandera, sustituí su archivo manteniendo el nombre (`es.svg`, `fr.svg`, etc.).
+- **Logos de operadores:** viven en `frontend-react/public/brands/` y se asignan con la propiedad `logo` de cada elemento de `RAILWAY_BRANDS` en `landing.ts` (por ejemplo, `logo: '/brands/renfe.svg'`). Si se quita esa propiedad, el carrusel usa la marca tipográfica de respaldo.
+
+
 🔑 Credenciales por Defecto (Seed Inicial)
 
     Usuario Administrador: admin@busyahu.com

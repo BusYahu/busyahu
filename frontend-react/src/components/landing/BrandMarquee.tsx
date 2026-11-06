@@ -23,22 +23,32 @@ function BrandMark({ brand }: { brand: RailwayBrand }) {
 
   return (
     <div className="flex min-w-[190px] items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.55)]">
-      <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[11px] font-black tracking-tight"
-        style={{
-          backgroundColor: brand.color,
-          color: lightBox ? '#082f49' : '#ffffff',
-        }}
-        aria-hidden="true"
-      >
-        {mark.short}
-      </span>
+      {brand.logo ? (
+        <span className="flex h-11 w-16 shrink-0 items-center justify-center rounded-xl bg-slate-50 p-1.5 ring-1 ring-slate-200/70">
+          <img
+            src={brand.logo}
+            alt={`Logo de ${brand.name}`}
+            className="max-h-7 max-w-full object-contain"
+          />
+        </span>
+      ) : (
+        <span
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[11px] font-black tracking-tight"
+          style={{
+            backgroundColor: brand.color,
+            color: lightBox ? '#082f49' : '#ffffff',
+          }}
+          aria-hidden="true"
+        >
+          {mark.short}
+        </span>
+      )}
       <span className="min-w-0">
-        <span className="block text-sm font-black leading-tight" style={{ color: brand.color }}>
-          {mark.main}
+        <span className="block text-sm font-black leading-tight text-slate-900">
+          {brand.name}
         </span>
         <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-          {mark.secondary ?? brand.region}
+          {brand.region}
         </span>
       </span>
       <BadgeCheck className="ml-auto h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />

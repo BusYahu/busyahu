@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowUpRight, Compass, TrainFront } from 'lucide-react';
 import type { Destination } from '../../types';
 import { COUNTRY_NETWORKS, HERO_SLIDES } from '../../data/landing';
+import { Flag } from './Flag';
 
 interface DestinationShowcaseProps {
   destinations: Destination[];
@@ -51,8 +52,13 @@ export function DestinationShowcase({ destinations, onSelectCountry }: Destinati
                   />
                 )}
                 <span className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-slate-950/5" />
-                <span className="absolute left-4 top-4 rounded-full border border-white/20 bg-slate-950/50 px-2 py-1 text-[10px] font-black text-white backdrop-blur-md">
-                  {destination.flagEmoji} {destination.countryCode}
+                <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-slate-950/50 px-2 py-1 text-[10px] font-black text-white backdrop-blur-md">
+                  <Flag
+                    code={destination.countryCode}
+                    country={destination.country}
+                    className="h-3.5 w-5"
+                  />
+                  {destination.countryCode}
                 </span>
                 <span className="absolute inset-x-4 bottom-4">
                   <span className="flex items-end justify-between gap-2">

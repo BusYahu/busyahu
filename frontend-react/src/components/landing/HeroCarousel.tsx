@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { Destination } from '../../types';
 import { HERO_SLIDES } from '../../data/landing';
+import { Flag } from './Flag';
 
 interface HeroCarouselProps {
   destinations: Destination[];
@@ -57,6 +58,9 @@ export function HeroCarousel({
   );
   const cities = activeDestination?.cities ?? [];
   const activeSlide = HERO_SLIDES[index % slideCount];
+  const activeSlideDestination = destinations.find(
+    (destination) => destination.id === activeSlide.countryId,
+  );
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -101,6 +105,7 @@ export function HeroCarousel({
                 src={slide.image}
                 alt={slide.alt}
                 className="h-full w-full object-cover"
+                style={{ objectPosition: slide.imagePosition ?? 'center' }}
                 loading={slideIndex === 0 ? 'eager' : 'lazy'}
                 fetchPriority={slideIndex === 0 ? 'high' : 'auto'}
                 referrerPolicy="no-referrer"
@@ -149,7 +154,11 @@ export function HeroCarousel({
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-                  <MapPin className="h-4 w-4" />
+                  <Flag
+                    code={activeDestination?.countryCode ?? selectedCountryId}
+                    country={activeDestination?.country}
+                    className="h-4 w-6"
+                  />
                 </span>
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
@@ -163,7 +172,7 @@ export function HeroCarousel({
                   >
                     {destinations.map((destination) => (
                       <option key={destination.id} value={destination.id}>
-                        {destination.flagEmoji} {destination.country}
+                        {destination.country}
                       </option>
                     ))}
                   </select>
@@ -284,8 +293,12 @@ export function HeroCarousel({
 
       {/* Rótulo dinámico sincronizado con la fotografía activa */}
       <div className="absolute bottom-4 right-4 z-20 flex items-center gap-3 rounded-2xl border border-white/20 bg-slate-950/60 px-3.5 py-2.5 shadow-2xl backdrop-blur-xl sm:bottom-5 sm:right-6 sm:px-4">
-        <span className="text-xl sm:text-2xl">
-          {destinations.find((destination) => destination.id === activeSlide.countryId)?.flagEmoji ?? '🚄'}
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
+          <Flag
+            code={activeSlideDestination?.countryCode ?? activeSlide.countryId}
+            country={activeSlide.country}
+            className="h-5 w-7"
+          />
         </span>
         <div>
           <div className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/55">En imagen</div>

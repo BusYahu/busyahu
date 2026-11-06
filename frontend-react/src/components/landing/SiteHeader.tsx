@@ -1,6 +1,7 @@
 import React from 'react';
-import { Globe2, HelpCircle, MapPin, Ticket, Train, UserRound } from 'lucide-react';
+import { HelpCircle, MapPin, Ticket, Train, UserRound } from 'lucide-react';
 import type { Destination, User } from '../../types';
+import { Flag } from './Flag';
 
 interface SiteHeaderProps {
   destinations: Destination[];
@@ -79,7 +80,11 @@ export function SiteHeader({
 
         <div className="flex items-center gap-2">
           <label className="hidden items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 shadow-sm sm:flex">
-            <Globe2 className="h-3.5 w-3.5 text-emerald-700" />
+            <Flag
+              code={destinations.find((destination) => destination.id === selectedCountryId)?.countryCode ?? selectedCountryId}
+              country={destinations.find((destination) => destination.id === selectedCountryId)?.country}
+              className="h-3.5 w-5"
+            />
             <span className="sr-only">País</span>
             <select
               aria-label="Seleccionar país"
@@ -89,7 +94,7 @@ export function SiteHeader({
             >
               {destinations.map((destination) => (
                 <option key={destination.id} value={destination.id}>
-                  {destination.flagEmoji} {destination.country}
+                  {destination.country}
                 </option>
               ))}
             </select>

@@ -10,6 +10,7 @@ import {
   Wifi,
 } from 'lucide-react';
 import type { Destination, TrainRoute } from '../../types';
+import { Flag } from './Flag';
 
 interface TrainResultsProps {
   destination?: Destination;
@@ -53,8 +54,13 @@ export function TrainResults({
             <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
               {fromCity} <span className="text-slate-300">→</span> {toCity}
             </h2>
-            <p className="mt-1 text-xs font-semibold text-slate-500">
-              {destination?.flagEmoji} {destination?.country} · {travelDate} ·{' '}
+            <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+              <Flag
+                code={destination?.countryCode ?? destination?.id}
+                country={destination?.country}
+                className="h-3.5 w-5"
+              />
+              {destination?.country} · {travelDate} ·{' '}
               {trains.length} {trains.length === 1 ? 'tren disponible' : 'trenes disponibles'}
             </p>
           </div>

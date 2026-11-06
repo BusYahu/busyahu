@@ -6,6 +6,13 @@ export interface HeroSlide {
   landmark: string;
   image: string;
   alt: string;
+  /**
+   * Encuadre de la foto dentro del hero (CSS `object-position`).
+   * Ejemplos: 'center', 'center 30%', 'center 80%', 'left center', 'right center'.
+   * El primer valor mueve la imagen en horizontal y el segundo en vertical.
+   * Un valor vertical bajo muestra más la parte superior; uno alto, la inferior.
+   */
+  imagePosition?: string;
 }
 
 const wiki = (path: string, file: string, width = 1920) =>
@@ -34,6 +41,8 @@ export const HERO_SLIDES: HeroSlide[] = [
     landmark: 'Sagrada Família',
     image: wiki('e/ef', 'SF_maig_2_cropped.jpg'),
     alt: 'Basílica de la Sagrada Família en Barcelona',
+    // Ejemplo: desplaza el encuadre hacia la parte superior de la foto.
+    imagePosition: 'center 30%',
   },
   {
     id: 'es-palacio-real',
@@ -325,21 +334,26 @@ export interface RailwayBrand {
   region: string;
   color: string;
   softColor: string;
+  /**
+   * Ruta pública del logo. Los archivos viven en `frontend-react/public/brands/`.
+   * Si se omite, el carrusel muestra la marca tipográfica de respaldo.
+   */
+  logo?: string;
 }
 
 export const RAILWAY_BRANDS: RailwayBrand[] = [
-  { id: 'renfe', name: 'Renfe AVE', region: 'España', color: '#8A1A63', softColor: '#fbeaf4' },
-  { id: 'ouigo', name: 'Ouigo', region: 'España', color: '#e5007d', softColor: '#fdeaf5' },
-  { id: 'iryo', name: 'iryo', region: 'España', color: '#111827', softColor: '#ecfdf5' },
-  { id: 'sncf', name: 'SNCF TGV inOui', region: 'Francia', color: '#0b2a5b', softColor: '#e8eef9' },
-  { id: 'db', name: 'Deutsche Bahn ICE', region: 'Alemania', color: '#c8102e', softColor: '#fdecef' },
-  { id: 'eurostar', name: 'Eurostar', region: 'Europa', color: '#0b1f3a', softColor: '#e8edf5' },
-  { id: 'amtrak', name: 'Amtrak', region: 'Estados Unidos', color: '#004b87', softColor: '#e6f0f8' },
-  { id: 'via', name: 'VIA Rail', region: 'Canadá', color: '#f2b705', softColor: '#fef7dc' },
-  { id: 'jr', name: 'JR Shinkansen', region: 'Japón', color: '#007a3d', softColor: '#e6f5ed' },
-  { id: 'crh', name: 'CRH China', region: 'China', color: '#b91c1c', softColor: '#fdeaea' },
-  { id: 'ir', name: 'Indian Railways', region: 'India', color: '#1d4ed8', softColor: '#e8eefc' },
-  { id: 'rzd', name: 'RZD Sapsan', region: 'Rusia', color: '#d21f2c', softColor: '#fdecee' },
+  { id: 'renfe', name: 'Renfe AVE', region: 'España', color: '#8A1A63', softColor: '#fbeaf4', logo: '/brands/renfe.svg' },
+  { id: 'ouigo', name: 'Ouigo', region: 'España', color: '#e5007d', softColor: '#fdeaf5', logo: '/brands/ouigo.svg' },
+  { id: 'iryo', name: 'iryo', region: 'España', color: '#111827', softColor: '#ecfdf5', logo: '/brands/iryo.png' },
+  { id: 'sncf', name: 'SNCF TGV inOui', region: 'Francia', color: '#0b2a5b', softColor: '#e8eef9', logo: '/brands/sncf.png' },
+  { id: 'db', name: 'Deutsche Bahn ICE', region: 'Alemania', color: '#c8102e', softColor: '#fdecef', logo: '/brands/db.svg' },
+  { id: 'eurostar', name: 'Eurostar', region: 'Europa', color: '#0b1f3a', softColor: '#e8edf5', logo: '/brands/eurostar.svg' },
+  { id: 'amtrak', name: 'Amtrak', region: 'Estados Unidos', color: '#004b87', softColor: '#e6f0f8', logo: '/brands/amtrak.png' },
+  { id: 'via', name: 'VIA Rail', region: 'Canadá', color: '#f2b705', softColor: '#fef7dc', logo: '/brands/via.svg' },
+  { id: 'jr', name: 'JR Shinkansen', region: 'Japón', color: '#007a3d', softColor: '#e6f5ed', logo: '/brands/jr.svg' },
+  { id: 'crh', name: 'CRH China', region: 'China', color: '#b91c1c', softColor: '#fdeaea', logo: '/brands/crh.png' },
+  { id: 'ir', name: 'Indian Railways', region: 'India', color: '#1d4ed8', softColor: '#e8eefc', logo: '/brands/ir.png' },
+  { id: 'rzd', name: 'RZD Sapsan', region: 'Rusia', color: '#d21f2c', softColor: '#fdecee', logo: '/brands/rzd.png' },
 ];
 
 export const COUNTRY_NETWORKS: Record<string, string> = {

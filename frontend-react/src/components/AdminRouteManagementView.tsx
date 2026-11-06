@@ -604,7 +604,7 @@ export const AdminRouteManagementView: React.FC<AdminRouteManagementViewProps> =
                     className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl"
                   >
                     {destinations.map((d) => (
-                      <option key={d.id} value={d.country}>{d.flagEmoji} {d.country}</option>
+                      <option key={d.id} value={d.country}>{d.country}</option>
                     ))}
                   </select>
                 </div>
