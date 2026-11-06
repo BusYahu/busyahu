@@ -293,7 +293,7 @@ export const AdminRouteManagementView: React.FC<AdminRouteManagementViewProps> =
           </h2>
 
           <p className="text-slate-600 max-w-lg mx-auto text-sm sm:text-base leading-relaxed mb-6">
-            El recurso <code className="bg-slate-100 px-2 py-0.5 rounded text-rose-600 font-mono text-xs">/admin/trains</code> requiere privilegios de <strong className="text-slate-800">Administrador de Red</strong>. Tu usuario autenticado posee rol de <strong className="text-slate-800 font-mono">client</strong>.
+            El recurso <code className="bg-slate-100 px-2 py-0.5 rounded text-rose-600 font-mono text-xs">/admin/trains</code> requiere privilegios de <strong className="text-slate-800">Administrador de Red</strong>. Tu usuario autenticado tiene el rol <strong className="text-slate-800 font-mono">client</strong> (cliente), sin privilegios de administración.
           </p>
 
           <button

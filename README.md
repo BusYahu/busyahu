@@ -12,7 +12,7 @@ Detalle completo en [`docs/EVALUACION.md`](docs/EVALUACION.md).
 
 ---
 
-## ⚡ Guía de Inicio Rápido (1 Solo Clic)
+## ⚡ Guía de Inicio Rápido (1 Solo Comando)
 
 No se requiere instalar Node.js, Python ni MongoDB en el equipo; el entorno está completamente contenerizado mediante **Docker Desktop**.
 
@@ -20,18 +20,23 @@ No se requiere instalar Node.js, Python ni MongoDB en el equipo; el entorno est�
    ```bash
    git clone https://github.com/tu-usuario/busyahu.git
    cd busyahu
+   ```
 
-    Ejecutar el script según el sistema operativo:
+2. **Levantar los 5 servicios con Docker Compose:**
+   ```bash
+   docker compose up --build
+   ```
 
-        En Windows: Hacer doble clic en start.bat (o ejecutar start.bat en la terminal).
+   También se puede iniciar con un solo clic usando los scripts incluidos:
 
-        En Mac / Linux:
-        code Bash
+   - **Windows:** doble clic en `start.bat` (o ejecutarlo desde la terminal).
+   - **Mac / Linux:**
+     ```bash
+     chmod +x start.sh stop.sh
+     ./start.sh
+     ```
 
-        chmod +x start.sh stop.sh
-        ./start.sh
-
-(El script comprueba las variables de entorno, compila y levanta los 5 contenedores en Docker y abre automáticamente las aplicaciones en el navegador).
+El comando construye las imágenes, espera a que MongoDB esté `healthy`, arranca ambos backends y expone los dos frontends. Docker Compose se encarga de la red interna `busyahu-network`, el volumen persistente y los healthchecks de todos los servicios.
 📌 Descripción del Proyecto
 
 BusYahu es una solución web completa para la búsqueda, reserva, emisión y gestión de pasajes en 11 redes de transporte internacionales (España, Francia, Alemania, Bélgica, Reino Unido, Estados Unidos, Canadá, Rusia, China, India y Japón).
@@ -96,6 +101,19 @@ Frontend Svelte	http://localhost:5174	Aplicación web cliente en Svelte 5
 Backend Express (TS)	http://localhost:4000	API REST en Node.js / Express (/api/health)
 Backend FastAPI (Py)	http://localhost:8000	API REST en Python (Swagger interactivo en /docs)
 Base de Datos MongoDB	mongodb://localhost:27017	Instancia de MongoDB con volumen persistente
+
+## 🎨 Landing B2C (React)
+
+La aplicación React incluye una portada comercial orientada al pasajero final:
+
+- Carrusel automático con 3 fotografías de alta resolución por cada uno de los 11 países y rótulo sincronizado del monumento.
+- Buscador flotante translúcido con origen, destino, fecha, viajeros y país de la red.
+- Marquee infinito con los operadores ferroviarios reales (Renfe AVE, Ouigo, iryo, SNCF TGV inOui, DB ICE, Eurostar, Amtrak, VIA Rail, JR Shinkansen, CRH China, Indian Railways y RZD Sapsan).
+- Grilla de destinos, sección "Cómo funciona", resultados de tren de ejemplo y FAQ desplegable con apertura independiente.
+- Navbar comercial y footer corporativo con métodos de pago y acceso discreto al panel administrativo.
+
+El acceso a `/admin` conserva el control RBAC: un usuario con rol `client` recibe **HTTP 403** y puede elevarse a administrador desde la misma pantalla de acceso restringido.
+
 🔑 Credenciales por Defecto (Seed Inicial)
 
     Usuario Administrador: admin@busyahu.com

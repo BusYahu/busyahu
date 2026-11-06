@@ -1,17 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, ArrowRight, ShieldCheck, Sparkles, Train as TrainIcon } from 'lucide-react';
 import { INITIAL_DESTINATIONS, INITIAL_TRAIN_ROUTES } from './mockData';
 import type { TrainRoute, Booking, Destination, User } from './types';
 
-// Componentes reales de tu proyecto
-import { Navbar } from './components/Navbar';
-import { CountrySelector } from './components/CountrySelector';
 import { SeatMap } from './components/SeatMap';
 import { ETicketModal } from './components/ETicketModal';
 import { MyBookings } from './components/MyBookings';
 import { AdminRouteManagementView } from './components/AdminRouteManagementView';
 import { ConnectivityHub } from './components/ConnectivityHub';
+import { SiteHeader } from './components/landing/SiteHeader';
+import { SiteFooter } from './components/landing/SiteFooter';
+import { HeroCarousel } from './components/landing/HeroCarousel';
+import { BrandMarquee } from './components/landing/BrandMarquee';
+import { DestinationShowcase } from './components/landing/DestinationShowcase';
+import { HowItWorks } from './components/landing/HowItWorks';
+import { TrainResults } from './components/landing/TrainResults';
+import { FAQAccordion } from './components/landing/FAQAccordion';
 
-import { ArrowRight, Train as TrainIcon, ShieldCheck, ArrowLeftRight, RefreshCw } from 'lucide-react';
 import { apiGateway, type BackendId } from './lib/apiClient';
 import { useBackendHealth } from './lib/useBackendHealth';
 import {
@@ -23,10 +28,10 @@ import {
 } from './lib/storage';
 
 const DEFAULT_USER: User = {
-  id: 'USR-ADMIN-01',
-  email: 'admin.ferroviario@etec.um.edu.ar',
-  name: 'Administrador E.T.E.C.',
-  role: 'admin',
+  id: 'USR-CLIENT-01',
+  email: 'cliente.turista@etec.um.edu.ar',
+  name: 'Cliente BusYahu',
+  role: 'client',
 };
 
 const DEFAULT_BOOKINGS: Booking[] = [
@@ -53,18 +58,23 @@ const DEFAULT_BOOKINGS: Booking[] = [
   },
 ];
 
+function scrollToSection(sectionId: string, delay = 80) {
+  window.setTimeout(() => {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, delay);
+}
+
 export default function App() {
   const [currentView, setCurrentView] = useState<'search' | 'seat_selection' | 'my_bookings' | 'admin'>('search');
   const initialFilters = useMemo(() => readSearchFilters(), []);
 
-  // Usuario RBAC para la Issue #09. Si hay una sesión compartida por Svelte,
-  // se reutiliza tal cual (misma clave localStorage).
+  // La landing es B2C: el visitante entra como cliente. El panel administrativo
+  // mantiene la protección RBAC y muestra 403 hasta elevar el rol.
   const [currentUser, setCurrentUser] = useState<User>(() => readSession().user ?? DEFAULT_USER);
 
   const [destinations, setDestinations] = useState<Destination[]>(INITIAL_DESTINATIONS);
   const [trains, setTrains] = useState<TrainRoute[]>(INITIAL_TRAIN_ROUTES);
 
-  // Filtros de búsqueda (se conservan al conmutar de backend o de frontend).
   const [selectedCountryId, setSelectedCountryId] = useState<string>(
     initialFilters.countryId || INITIAL_DESTINATIONS[0]?.id || 'es',
   );
@@ -101,7 +111,7 @@ export default function App() {
       if (nextDestinations.length) setDestinations(nextDestinations);
       if (nextTrains.length) setTrains(nextTrains);
     } catch (error) {
-      // El cliente ya cae a mock; este catch evita romper la interfaz.
+      // El gateway ya cae a mock; este catch evita romper la interfaz.
       console.warn('[BusYahu] No se pudo refrescar el catálogo:', error);
     } finally {
       setLoadingCatalog(false);
@@ -176,7 +186,58 @@ export default function App() {
     handleSwitchBackend(activeBackend === 'express' ? 'fastapi' : 'express');
   }, [activeBackend, handleSwitchBackend]);
 
-  // CRUD Admin (Issue #09)
+  const handleGoHome = useCallback(() => {
+    setCurrentView('search');
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 40);
+  }, []);
+
+  const handleGoBookings = useCallback(() => {
+    setCurrentView('my_bookings');
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 40);
+  }, []);
+
+  const handleGoDestinations = useCallback(() => {
+    setCurrentView('search');
+    scrollToSection('destinos');
+  }, []);
+
+  const handleGoFaq = useCallback(() => {
+    setCurrentView('search');
+    scrollToSection('ayuda');
+  }, []);
+
+  const handleOpenAdmin = useCallback(() => {
+    setCurrentView('admin');
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 40);
+  }, []);
+
+  const handleSelectCountry = useCallback((countryId: string) => {
+    setSelectedCountryId(countryId);
+    setCurrentView('search');
+  }, []);
+
+  const handleExploreCountry = useCallback((countryId: string) => {
+    setSelectedCountryId(countryId);
+    setCurrentView('search');
+    scrollToSection('resultados', 120);
+  }, []);
+
+  const handleSwapCities = useCallback(() => {
+    setFromCity(toCity);
+    setToCity(fromCity);
+  }, [fromCity, toCity]);
+
+  const handleSearch = useCallback(() => {
+    setCurrentView('search');
+    scrollToSection('resultados', 80);
+  }, []);
+
+  const handleSelectTrain = useCallback((train: TrainRoute) => {
+    setSelectedTrain(train);
+    setCurrentView('seat_selection');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const handleAddTrain = (newTrain: TrainRoute) => {
     setTrains((prev) => [newTrain, ...prev]);
   };
@@ -197,8 +258,6 @@ export default function App() {
     }));
   };
 
-  // Manejo de confirmación de asientos: se muestra el billete de inmediato y
-  // se sincroniza con el backend activo (con fallback ordenado a mock).
   const handleConfirmSeats = (
     seats: string[],
     seatClass: 'tourist' | 'first' | 'business',
@@ -207,7 +266,7 @@ export default function App() {
     if (!selectedTrain) return;
 
     const session = readSession();
-    const userEmail = session.user?.email || 'ls.gomez@alumno.etec.um.edu.ar';
+    const userEmail = session.user?.email || 'cliente.turista@etec.um.edu.ar';
     const totalPrice = price * Math.max(seats.length, 1);
 
     const newBooking: Booking = {
@@ -273,281 +332,195 @@ export default function App() {
     });
   };
 
+  const confirmedBookingsCount = bookings.filter((booking) => booking.status === 'confirmed').length;
+
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans">
-      {/* Navbar Superior */}
-      <header className="bg-slate-950 text-white border-b border-slate-800 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div
-            onClick={() => setCurrentView('search')}
-            className="flex items-center gap-3 cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
-              <TrainIcon className="w-5 h-5" />
-            </div>
-            <span className="text-lg font-black text-white">BusYahu</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentView('search')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
-                currentView === 'search' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              Buscador
-            </button>
-            <button
-              onClick={() => setCurrentView('my_bookings')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
-                currentView === 'my_bookings' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              Mis Billetes ({bookings.filter((booking) => booking.status === 'confirmed').length})
-            </button>
-
-            {/* Botón Admin Protegido (Issue #09) */}
-            <button
-              onClick={() => setCurrentView('admin')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border ${
-                currentView === 'admin'
-                  ? 'bg-rose-600 border-rose-500 text-white'
-                  : 'bg-slate-900 border-rose-500/40 text-rose-300 hover:bg-rose-950/40'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-rose-400" />
-              <span>Admin Rutas</span>
-              <span className="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold uppercase bg-rose-500/20 text-rose-300">
-                {currentUser.role}
-              </span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Panel de conectividad e interoperabilidad (Issue #11) */}
-      <ConnectivityHub
-        activeBackend={activeBackend}
-        health={health}
-        lastResult={lastResult}
-        loading={loadingCatalog}
-        onSwitchBackend={handleSwitchBackend}
-        onRefresh={handleRefreshAll}
-        onRetryAlternate={handleRetryAlternate}
+    <div className="flex min-h-screen flex-col bg-white font-sans text-slate-900">
+      <SiteHeader
+        destinations={destinations}
+        selectedCountryId={selectedCountryId}
+        currentView={currentView}
+        currentUser={currentUser}
+        bookingsCount={confirmedBookingsCount}
+        onSelectCountry={handleSelectCountry}
+        onGoHome={handleGoHome}
+        onGoBookings={handleGoBookings}
+        onGoDestinations={handleGoDestinations}
+        onGoFaq={handleGoFaq}
       />
 
-      {/* Cuerpo Principal */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
-        {/* Vista Admin (Issue #09) */}
-        {currentView === 'admin' && (
-          <AdminRouteManagementView
-            currentUser={currentUser}
-            onSwitchUserRole={handleSwitchUserRole}
-            trains={trains}
-            destinations={destinations}
-            onAddTrain={handleAddTrain}
-            onUpdateTrain={handleUpdateTrain}
-            onDeleteTrain={handleDeleteTrain}
-            activeBackend={activeBackend}
-            onToggleBackend={handleSwitchBackend}
-          />
-        )}
-
-        {/* Vista Mis Billetes */}
-        {currentView === 'my_bookings' && (
-          <MyBookings
-            bookings={bookings}
-            onCancelBooking={handleCancelBooking}
-            onViewTicket={(booking) => {
-              setActiveBooking(booking);
-              setIsTicketModalOpen(true);
-            }}
-            onGoToSearch={() => setCurrentView('search')}
-          />
-        )}
-
-        {/* Vista Selección de Asientos */}
-        {currentView === 'seat_selection' && selectedTrain && (
-          <SeatMap
-            train={selectedTrain}
-            date={travelDate}
-            currencySymbol={currentDestination?.currencySymbol || '€'}
-            onBack={() => setCurrentView('search')}
-            onConfirmSeats={handleConfirmSeats}
-          />
-        )}
-
-        {/* Vista Buscador */}
+      <main className="flex-1">
         {currentView === 'search' && (
-          <div className="space-y-6">
-            <CountrySelector
+          <>
+            <HeroCarousel
               destinations={destinations}
               selectedCountryId={selectedCountryId}
-              onSelectCountry={setSelectedCountryId}
+              fromCity={fromCity}
+              toCity={toCity}
+              travelDate={travelDate}
+              passengerCount={passengerCount}
+              onSelectCountry={handleSelectCountry}
+              onFromCityChange={setFromCity}
+              onToCityChange={setToCity}
+              onTravelDateChange={setTravelDate}
+              onPassengerCountChange={setPassengerCount}
+              onSwapCities={handleSwapCities}
+              onSearch={handleSearch}
             />
+            <BrandMarquee />
+            <DestinationShowcase destinations={destinations} onSelectCountry={handleExploreCountry} />
+            <HowItWorks />
+            <TrainResults
+              destination={currentDestination}
+              fromCity={fromCity}
+              toCity={toCity}
+              travelDate={travelDate}
+              trains={currentCountryTrains}
+              loading={loadingCatalog}
+              onSelectTrain={handleSelectTrain}
+              onReload={() => void loadCatalog()}
+            />
+            <FAQAccordion />
 
-            {/* Filtros de búsqueda persistentes entre React, Svelte y backends */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                <div className="md:col-span-4">
-                  <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-1">
-                    Origen
-                  </label>
-                  <select
-                    value={fromCity}
-                    onChange={(event) => setFromCity(event.target.value)}
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900"
-                  >
-                    {currentDestinationCities.map((city) => (
-                      <option key={`from-${city.name}`} value={city.name}>
-                        {city.name} ({city.station})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="md:col-span-1 flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const previousFrom = fromCity;
-                      setFromCity(toCity);
-                      setToCity(previousFrom);
-                    }}
-                    className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 flex items-center justify-center text-slate-600"
-                    title="Intercambiar origen y destino"
-                  >
-                    <ArrowLeftRight className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="md:col-span-4">
-                  <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-1">
-                    Destino
-                  </label>
-                  <select
-                    value={toCity}
-                    onChange={(event) => setToCity(event.target.value)}
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900"
-                  >
-                    {currentDestinationCities.map((city) => (
-                      <option key={`to-${city.name}`} value={city.name}>
-                        {city.name} ({city.station})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-1">
-                    Fecha
-                  </label>
-                  <input
-                    type="date"
-                    min={new Date().toISOString().slice(0, 10)}
-                    value={travelDate}
-                    onChange={(event) => setTravelDate(event.target.value)}
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900"
-                  />
-                </div>
-                <div className="md:col-span-1">
-                  <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-1">
-                    Viajeros
-                  </label>
-                  <select
-                    value={passengerCount}
-                    onChange={(event) => setPassengerCount(Number(event.target.value))}
-                    className="w-full px-2 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 text-center"
-                  >
-                    {[1, 2, 3, 4, 5, 6].map((count) => (
-                      <option key={count} value={count}>
-                        {count}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <h2 className="text-base font-bold text-slate-900">
-                  Trenes Disponibles en {currentDestination?.country} ({currentCountryTrains.length})
-                </h2>
-                <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                  <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 font-mono">
-                    {apiGateway.getBackendConfig(activeBackend).shortLabel} :{apiGateway.getBackendConfig(activeBackend).port}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 font-mono uppercase">
-                    {lastResult.source}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => void loadCatalog()}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 font-bold text-slate-600"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${loadingCatalog ? 'animate-spin' : ''}`} />
-                    Recargar
-                  </button>
-                </div>
-              </div>
-
-              {currentCountryTrains.length === 0 ? (
-                <div className="border border-dashed border-slate-300 rounded-xl p-8 text-center text-sm text-slate-500">
-                  No hay trenes para {fromCity} → {toCity}. Cambia el origen/destino o restablece los filtros.
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFromCity(currentDestinationCities[0]?.name || '');
-                      setToCity(currentDestinationCities[1]?.name || '');
-                    }}
-                    className="ml-2 font-bold text-indigo-600 hover:underline"
-                  >
-                    Restablecer
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {currentCountryTrains.map((train) => (
-                    <div key={train.id} className="border border-slate-200 p-4 rounded-xl flex items-center justify-between">
-                      <div>
-                        <div className="font-bold text-slate-900">{train.trainNumber} - {train.operator}</div>
-                        <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
-                          <span>{train.fromCity}</span>
-                          <ArrowRight className="w-3 h-3 text-slate-400" />
-                          <span>{train.toCity}</span>
-                        </div>
-                        <div className="text-xs font-mono text-slate-700 mt-1">
-                          {train.departureTime} - {train.arrivalTime} ({train.duration})
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-black text-slate-900">
-                          {currentDestination?.currencySymbol || '€'} {train.basePrice}
-                        </div>
-                        <button
-                          onClick={() => {
-                            setSelectedTrain(train);
-                            setCurrentView('seat_selection');
-                          }}
-                          className="mt-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg transition-all"
-                        >
-                          Elegir Asiento
-                        </button>
-                      </div>
+            <section className="bg-emerald-900 py-14 text-white sm:py-16">
+              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="relative overflow-hidden rounded-[32px] border border-emerald-700 bg-emerald-800 px-6 py-10 shadow-2xl sm:px-10">
+                  <div className="absolute -right-10 -top-16 h-56 w-56 rounded-full bg-emerald-500/20 blur-2xl" />
+                  <div className="absolute -bottom-20 right-28 h-56 w-56 rounded-full bg-amber-300/10 blur-2xl" />
+                  <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/60 bg-emerald-950/40 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Tu viaje, a un clic
+                      </span>
+                      <h2 className="mt-4 max-w-2xl text-3xl font-black leading-tight tracking-tight sm:text-4xl">
+                        ¿Listo para cambiar de paisaje sin cambiar de ritmo?
+                      </h2>
+                      <p className="mt-3 max-w-xl text-sm leading-relaxed text-emerald-100/80">
+                        Encuentra tu próximo tren, elige asiento y lleva tu billete QR en el móvil.
+                        Sin filas y con asistencia real cuando la necesites.
+                      </p>
                     </div>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={handleGoHome}
+                      className="inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-sm font-black text-emerald-900 shadow-xl transition-transform hover:-translate-y-0.5"
+                    >
+                      <TrainIcon className="h-4 w-4" />
+                      Buscar mi tren
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="relative mt-7 flex flex-wrap gap-x-6 gap-y-2 text-[11px] font-semibold text-emerald-100/80">
+                    <span className="inline-flex items-center gap-1.5">
+                      <ShieldCheck className="h-4 w-4" /> Billetes oficiales
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <ShieldCheck className="h-4 w-4" /> Cambios flexibles
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <ShieldCheck className="h-4 w-4" /> Soporte 24/7
+                    </span>
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            </section>
+          </>
+        )}
+
+        {currentView === 'my_bookings' && (
+          <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+            <button
+              type="button"
+              onClick={handleGoHome}
+              className="mb-6 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-900"
+            >
+              <ArrowLeft className="h-4 w-4" /> Volver al buscador
+            </button>
+            <MyBookings
+              bookings={bookings}
+              onCancelBooking={handleCancelBooking}
+              onViewTicket={(booking) => {
+                setActiveBooking(booking);
+                setIsTicketModalOpen(true);
+              }}
+              onGoToSearch={handleGoHome}
+            />
           </div>
         )}
 
-        {/* Modal E-Ticket */}
-        {isTicketModalOpen && activeBooking && (
-          <ETicketModal
-            booking={activeBooking}
-            onClose={() => setIsTicketModalOpen(false)}
-          />
+        {currentView === 'seat_selection' && selectedTrain && (
+          <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+            <SeatMap
+              train={selectedTrain}
+              date={travelDate}
+              currencySymbol={currentDestination?.currencySymbol || '€'}
+              onBack={() => {
+                setCurrentView('search');
+                scrollToSection('resultados', 80);
+              }}
+              onConfirmSeats={handleConfirmSeats}
+            />
+          </div>
+        )}
+
+        {currentView === 'admin' && (
+          <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleGoHome}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-900"
+              >
+                <ArrowLeft className="h-4 w-4" /> Volver a la web pública
+              </button>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-rose-700">
+                Acceso restringido · RBAC
+              </span>
+            </div>
+
+            <ConnectivityHub
+              activeBackend={activeBackend}
+              health={health}
+              lastResult={lastResult}
+              loading={loadingCatalog}
+              onSwitchBackend={handleSwitchBackend}
+              onRefresh={() => void handleRefreshAll()}
+              onRetryAlternate={handleRetryAlternate}
+            />
+
+            <div className="mt-6">
+              <AdminRouteManagementView
+                currentUser={currentUser}
+                onSwitchUserRole={handleSwitchUserRole}
+                trains={trains}
+                destinations={destinations}
+                onAddTrain={handleAddTrain}
+                onUpdateTrain={handleUpdateTrain}
+                onDeleteTrain={handleDeleteTrain}
+                activeBackend={activeBackend}
+                onToggleBackend={handleSwitchBackend}
+              />
+            </div>
+          </div>
         )}
       </main>
+
+      <SiteFooter
+        onGoHome={handleGoHome}
+        onGoBookings={handleGoBookings}
+        onGoFaq={handleGoFaq}
+        onGoDestinations={handleGoDestinations}
+        onOpenAdmin={handleOpenAdmin}
+      />
+
+      {isTicketModalOpen && activeBooking && (
+        <div className="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/65 p-4 backdrop-blur-sm sm:p-8">
+          <div className="mx-auto max-w-2xl">
+            <ETicketModal booking={activeBooking} onClose={() => setIsTicketModalOpen(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

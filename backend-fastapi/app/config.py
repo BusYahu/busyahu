@@ -24,13 +24,13 @@ def _get_int(key: str, default: int) -> int:
 
 def _build_mongo_uri() -> str:
     uri = os.getenv("MONGO_URI", "").strip()
-    
-    # Si especificaste una URI en el .env, ÚSALA TAL CUAL sin forzar contraseñas
+
+    # Dentro de Docker Compose la URI debe conservar el host interno "mongo".
+    # Si se reescribe a localhost, el contenedor falla con ENOTFOUND/ECONNREFUSED.
     if uri:
-        # Si tiene 'mongo:27017' y estás en local, la reemplazamos por localhost
-        return uri.replace("@mongo:27017", "@localhost:27017").replace("://mongo:27017", "://localhost:27017")
-    
-    # Si no hay variable, por defecto conectamos a localhost sin credenciales en local
+        return uri
+
+    # Fallback exclusivo para ejecución local (fuera de Docker).
     return "mongodb://localhost:27017/busyahu_db"
 
 class Settings(BaseSettings):
@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     
     # Configuracion de MongoDB
     MONGO_URI: str = _build_mongo_uri()
-    DATABASE_NAME: str = os.getenv("DATABASE_NAME", os.getenv("MONGO_INITDB_DATABASE", "railworld_db"))
+    DATABASE_NAME: str = os.getenv("DATABASE_NAME", os.getenv("MONGO_INITDB_DATABASE", "busyahu_db"))
     
     # Configuracion de Seguridad JWT
     JWT_SECRET: str = os.getenv("JWT_SECRET", "super_secret_jwt_key_busyahu_prog3_2026_secure")
