@@ -146,13 +146,13 @@
   );
 </script>
 
-<div id="train-search-view" class="space-y-12 pb-16">
+<div id="train-search-view" class="space-y-12 pb-16 animate-fade-up">
   <!-- 1. HERO SECTION: Consumer Rail Booking Hub -->
   <section class="relative rounded-3xl overflow-hidden shadow-2xl bg-slate-950 text-white min-h-[460px] flex flex-col justify-between">
     <!-- Cinematic Backdrop Image -->
     <div class="absolute inset-0 pointer-events-none">
       <img
-        src="/src/assets/images/hero_highspeed_train_1791381943799.jpg"
+        src="/imgs/tren_inoui_paris_lyon_marsella.jpg"
         alt="Tren de alta velocidad en paisaje europeo"
         class="w-full h-full object-cover object-center opacity-40 brightness-75 scale-105"
         referrerpolicy="no-referrer"
@@ -209,7 +209,7 @@
 
     <!-- SEARCH WIDGET FLOATING BAR -->
     <div class="relative z-10 px-4 sm:px-8 pb-8">
-      <div class="bg-white text-slate-900 rounded-2xl p-4 sm:p-6 shadow-2xl border border-slate-200">
+      <div class="glass-card text-slate-900 rounded-2xl p-4 sm:p-6 shadow-2xl ">
         <!-- Top Selector: Country & Class -->
         <div class="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100 text-xs">
           <div class="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1">
@@ -360,7 +360,7 @@
 
   <!-- 2. VALUE PROPOSITIONS -->
   <section class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-start gap-3.5">
+    <div class="glass-card p-5 rounded-2xl  shadow-sm flex items-start gap-3.5">
       <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
         <Luggage class="w-5 h-5" />
       </div>
@@ -372,7 +372,7 @@
       </div>
     </div>
 
-    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-start gap-3.5">
+    <div class="glass-card p-5 rounded-2xl  shadow-sm flex items-start gap-3.5">
       <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
         <ShieldCheck class="w-5 h-5" />
       </div>
@@ -384,7 +384,7 @@
       </div>
     </div>
 
-    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-start gap-3.5">
+    <div class="glass-card p-5 rounded-2xl  shadow-sm flex items-start gap-3.5">
       <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
         <Zap class="w-5 h-5" />
       </div>
@@ -475,10 +475,10 @@
     <!-- Cards Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Card 1 -->
-      <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
+      <div class="glass-card rounded-2xl overflow-hidden  shadow-sm hover:shadow-md transition-shadow group">
         <div class="relative h-48 overflow-hidden bg-slate-100">
           <img
-            src="/src/assets/images/dest_barcelona_coast_1791381953516.jpg"
+            src="/imgs/costa_mediterranea_bcn.jpg"
             alt="Costa Mediterránea en tren de alta velocidad"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             referrerpolicy="no-referrer"
@@ -513,10 +513,10 @@
       </div>
 
       <!-- Card 2 -->
-      <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
+      <div class="glass-card rounded-2xl overflow-hidden  shadow-sm hover:shadow-md transition-shadow group">
         <div class="relative h-48 overflow-hidden bg-slate-100">
           <img
-            src="/src/assets/images/train_luxury_interior_1791381964518.jpg"
+            src="/imgs/tren_inoui_paris_lyon_marsella.jpg"
             alt="Interior de cabina de primera clase en tren"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             referrerpolicy="no-referrer"
@@ -551,16 +551,14 @@
       </div>
 
       <!-- Card 3 -->
-      <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
-        <div class="relative h-48 overflow-hidden bg-slate-900 flex items-center justify-center text-white">
-          <div class="absolute inset-0 bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 opacity-90"></div>
-          <div class="relative z-10 text-center p-6 space-y-2">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 flex items-center justify-center mx-auto">
-              <Train class="w-6 h-6" />
-            </div>
-            <div class="text-lg font-black tracking-tight">Shinkansen Nozomi</div>
-            <div class="text-xs text-indigo-200">Puntualidad milimétrica en Japón</div>
-          </div>
+      <div class="glass-card rounded-2xl overflow-hidden  shadow-sm hover:shadow-md transition-shadow group">
+        <div class="relative h-48 overflow-hidden bg-slate-100">
+          <img
+            src="/imgs/tren_tokio_a_kioto.jpg"
+            alt="Tren bala Shinkansen en Japón"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            referrerpolicy="no-referrer"
+          />
           <div class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-full">
             🇯🇵 Japón · JR Central
           </div>
@@ -595,7 +593,7 @@
   <!-- 4. SECTION: TRAIN RESULTS LIST & SEAT SELECTION TRIGGER -->
   <section id="train-results-section" class="space-y-6 pt-4">
     <!-- Results Header -->
-    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+    <div class="glass-card p-5 rounded-2xl  shadow-sm space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div class="flex items-center gap-2 text-xs font-bold text-slate-500">
@@ -649,7 +647,7 @@
 
     <!-- Results Cards -->
     {#if filteredTrains.length === 0}
-      <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-4">
+      <div class="glass-card rounded-2xl  p-12 text-center space-y-4">
         <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
           <Train class="w-8 h-8" />
         </div>
@@ -681,7 +679,7 @@
           {@const firstPrice = Math.round(train.basePrice * 1.4)}
           {@const businessPrice = Math.round(train.basePrice * 1.8)}
 
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all p-5 sm:p-6">
+          <div class="glass-card rounded-2xl  shadow-sm hover:border-indigo-300 hover:shadow-md transition-all p-5 sm:p-6">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <!-- Left Details -->
               <div class="space-y-4 flex-1">
@@ -766,7 +764,7 @@
                   <button
                     type="button"
                     onclick={() => (selectedClassTier = 'tourist')}
-                    class="w-full p-2 rounded-lg cursor-pointer flex items-center justify-between text-xs transition-colors text-left {selectedClassTier === 'tourist' ? 'bg-indigo-50 border border-indigo-300 font-bold text-indigo-950' : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'}"
+                    class="w-full p-2 rounded-lg cursor-pointer flex items-center justify-between text-xs transition-colors text-left {selectedClassTier === 'tourist' ? 'bg-indigo-50 border border-indigo-300 font-bold text-indigo-950' : 'glass-card  text-slate-700 hover:border-slate-300'}"
                   >
                     <div>
                       <span class="block font-semibold">Turista</span>
@@ -781,7 +779,7 @@
                   <button
                     type="button"
                     onclick={() => (selectedClassTier = 'first')}
-                    class="w-full p-2 rounded-lg cursor-pointer flex items-center justify-between text-xs transition-colors text-left {selectedClassTier === 'first' ? 'bg-indigo-50 border border-indigo-300 font-bold text-indigo-950' : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'}"
+                    class="w-full p-2 rounded-lg cursor-pointer flex items-center justify-between text-xs transition-colors text-left {selectedClassTier === 'first' ? 'bg-indigo-50 border border-indigo-300 font-bold text-indigo-950' : 'glass-card  text-slate-700 hover:border-slate-300'}"
                   >
                     <div>
                       <span class="block font-semibold">Primera</span>
@@ -796,7 +794,7 @@
                   <button
                     type="button"
                     onclick={() => (selectedClassTier = 'business')}
-                    class="w-full p-2 rounded-lg cursor-pointer flex items-center justify-between text-xs transition-colors text-left {selectedClassTier === 'business' ? 'bg-indigo-50 border border-indigo-300 font-bold text-indigo-950' : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'}"
+                    class="w-full p-2 rounded-lg cursor-pointer flex items-center justify-between text-xs transition-colors text-left {selectedClassTier === 'business' ? 'bg-indigo-50 border border-indigo-300 font-bold text-indigo-950' : 'glass-card  text-slate-700 hover:border-slate-300'}"
                   >
                     <div>
                       <span class="block font-semibold">Gran Clase</span>

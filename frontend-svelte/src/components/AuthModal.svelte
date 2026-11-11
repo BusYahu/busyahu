@@ -210,7 +210,7 @@
 
 {#if isOpen}
   <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 overflow-hidden relative">
+    <div class="glass-card w-full max-w-md rounded-3xl shadow-2xl  overflow-hidden relative">
       <div class="bg-slate-950 text-white p-6 relative">
         <button
           onclick={onClose}

@@ -342,7 +342,7 @@
   <!-- ============================================================== -->
   <!-- CONSUMER TOP NAVBAR: 3-Zone Clean Header                       -->
   <!-- ============================================================== -->
-  <header class="bg-slate-950 text-white border-b border-slate-800/80 sticky top-0 z-40 backdrop-blur-md bg-slate-950/95">
+  <header class="glass-dark text-white sticky top-0 z-40 border-b border-white/10 shadow-lg">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
       <!-- Zone 1: Single Brand Element -->
       <button
@@ -447,7 +447,7 @@
             </button>
 
             {#if isUserMenuOpen}
-              <div class="absolute right-0 mt-2 w-56 bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 text-xs space-y-1">
+              <div class="absolute right-0 mt-2 w-56 glass-card text-slate-900 rounded-2xl shadow-2xl  p-2 z-50 text-xs space-y-1">
                 <div class="p-2 border-b border-slate-100">
                   <div class="font-bold text-slate-900 text-sm truncate">{currentUser.name}</div>
                   <div class="text-slate-500 font-mono text-[11px] truncate flex items-center gap-1 mt-0.5">
@@ -548,7 +548,7 @@
   <!-- ============================================================== -->
   <!-- MAIN BODY                                                      -->
   <!-- ============================================================== -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-up">
     {#if currentView === 'search'}
       <TrainSearchView
         {destinations}
@@ -600,7 +600,7 @@
   <!-- Modal Crear Ruta (solo usuario autorizado) -->
   {#if isCreateRouteOpen}
     <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden relative">
+      <div class="glass-card w-full max-w-lg rounded-3xl shadow-2xl  overflow-hidden relative">
         <div class="bg-slate-950 text-white p-6 relative">
           <button onclick={() => (isCreateRouteOpen = false)} class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition-colors">
             ✕

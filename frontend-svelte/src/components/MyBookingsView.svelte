@@ -61,7 +61,7 @@
   });
 </script>
 
-<div id="my-bookings-view" class="max-w-5xl mx-auto space-y-6 pb-16">
+<div id="my-bookings-view" class="max-w-5xl mx-auto space-y-6 pb-16 animate-fade-up">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
     <div>
       <h2 class="text-2xl font-black text-slate-900 tracking-tight">Mis Billetes y Viajes</h2>
@@ -85,7 +85,7 @@
   </div>
 
   {#if bookings.length === 0}
-    <div class="bg-white border border-slate-200 rounded-3xl p-12 text-center space-y-4 shadow-sm">
+    <div class="glass-card  rounded-3xl p-12 text-center space-y-4 shadow-sm">
       <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
         <Ticket class="w-7 h-7" />
       </div>
