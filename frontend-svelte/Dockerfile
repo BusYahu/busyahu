@@ -3,7 +3,10 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+# El lockfile puede haberse generado en Windows y omitir los binarios nativos
+# de Rollup para Linux/musl. Resolvemos las dependencias para la plataforma
+# del contenedor para que el build sea reproducible en cualquier host.
+RUN npm install --no-package-lock
 COPY . .
 RUN npm run build
 
