@@ -3,7 +3,7 @@
 
 > Documento **generado automáticamente** por la cátedra de Programación III (RepoSense + análisis de calidad + constancia). **No editar a mano**: se regenera en cada evaluación.
 > Rama evaluada: `main`. Análisis **heurístico** (regex + métricas): es una criba para orientar la revisión, **no una nota**.
-> Generado: 2026-11-14.
+> Generado: 2026-11-16.
 
 ## 1. Veredicto
 
@@ -42,8 +42,8 @@
 
 | Alumno | Sesiones | Cumplimiento | Pausa | Recencia | IC | Nivel | Para subir de nivel |
 |---|--:|--:|--:|--:|--:|--|--|
-| Lauti Gómez | 9 | 34% | 35 d | 50% | **29** | No aprueba | Cumplimiento 34% (mín. 50%) |
-| Valentino Dilello | 14 | 53% | 21 d | 86% | **47** | Aprueba | Cumplimiento 53% (mín. 100%); Pausa 21 d (máx. 5 d) |
+| Lauti Gómez | 9 | 33% | 35 d | 29% | **26** | No aprueba | Cumplimiento 33% (mín. 50%); Recencia 29% (mín. 50%) |
+| Valentino Dilello | 15 | 55% | 21 d | 86% | **48** | Aprueba | Cumplimiento 55% (mín. 100%); Pausa 21 d (máx. 5 d) |
 
 > Para aprobar el IC: **2 sesiones por semana** sostenidas, sin pausas mayores a **10 días** y con actividad en las **últimas 2 semanas**. Se excluyen merges, bots y al docente. Zona horaria UTC-3.
 
@@ -232,11 +232,12 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 | 2026-11-11 | No | sin actividad | 0 / 0 |
 | 2026-11-13 | No | sin actividad | 0 / 0 |
 
-**Fuera de clase:** 1 fecha(s) con actividad · 2 commits · 0 merges
+**Fuera de clase:** 2 fecha(s) con actividad · 3 commits · 1 merges
 
 | Fecha | Repositorios | Commits / merges |
 |---|---|--:|
 | 2026-10-31 | busyahu | 2 / 0 |
+| 2026-11-14 | busyahu | 1 / 1 |
 
 ### Valentino Dilello
 
@@ -272,7 +273,7 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 | 2026-11-11 | **Sí** | busyahu | 1 / 0 |
 | 2026-11-13 | No | sin actividad | 0 / 0 |
 
-**Fuera de clase:** 5 fecha(s) con actividad · 4 commits · 3 merges
+**Fuera de clase:** 6 fecha(s) con actividad · 5 commits · 4 merges
 
 | Fecha | Repositorios | Commits / merges |
 |---|---|--:|
@@ -281,6 +282,7 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 | 2026-09-06 | busyahu | 1 / 0 |
 | 2026-09-07 | busyahu | 0 / 2 |
 | 2026-11-03 | busyahu | 1 / 1 |
+| 2026-11-14 | busyahu | 1 / 1 |
 
 ## 7. Anexo: dónde mirar
 
