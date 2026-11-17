@@ -155,7 +155,7 @@
   }
 </script>
 
-<div id="ticket-confirmation-view" class="max-w-3xl mx-auto space-y-6 pb-16">
+<div id="ticket-confirmation-view" class="max-w-3xl mx-auto space-y-6 pb-16 animate-fade-up">
   <!-- Top Success Banner -->
   <div class="bg-emerald-50 border border-emerald-200 rounded-3xl p-6 sm:p-8 text-center space-y-3 shadow-sm">
     <div class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-md">
@@ -173,7 +173,7 @@
   </div>
 
   <!-- Real Email Dispatch Status Widget -->
-  <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3 print:hidden">
+  <div class="glass-card rounded-2xl  p-5 shadow-sm space-y-3 print:hidden">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <Mail class="w-5 h-5 text-indigo-600" />

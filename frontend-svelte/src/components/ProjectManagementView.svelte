@@ -32,7 +32,7 @@
 
 <div class="space-y-6">
   <!-- Cabecera Informativa del Proyecto Académico -->
-  <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+  <div class="glass-card rounded-2xl p-6 shadow-sm ">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <div class="flex items-center gap-2 mb-1">
@@ -170,7 +170,7 @@
       <!-- Columna Derecha: Ficha Técnica Detallada de la Issue Seleccionada -->
       <div class="lg:col-span-8">
         {#if selectedIssue}
-          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+          <div class="glass-card rounded-2xl p-6 shadow-sm  space-y-6">
             <!-- Header de la Ficha -->
             <div class="border-b border-slate-200 pb-5">
               <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
@@ -275,7 +275,7 @@
     </div>
   {:else if activeTab === 'flow'}
     <!-- Flujo de Trabajo Paso a Paso -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+    <div class="glass-card rounded-2xl p-6 shadow-sm  space-y-6">
       <h3 class="text-lg font-black text-slate-900">
         Metodología de Desarrollo en 4 Pasos Obligatorios
       </h3>
@@ -316,7 +316,7 @@
     </div>
   {:else if activeTab === 'contract'}
     <!-- Contrato API REST -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+    <div class="glass-card rounded-2xl p-6 shadow-sm  space-y-4">
       <h3 class="text-lg font-black text-slate-900">
         Especificación del Contrato API REST (Paridad Express ⚡ y FastAPI 🐍)
       </h3>
@@ -395,7 +395,7 @@
     </div>
   {:else if activeTab === 'matrix'}
     <!-- Matriz de Paridad 2x2 -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+    <div class="glass-card rounded-2xl p-6 shadow-sm  space-y-4">
       <h3 class="text-lg font-black text-slate-900">
         Matriz de Interoperabilidad 2x2 (Frontends x Backends)
       </h3>
