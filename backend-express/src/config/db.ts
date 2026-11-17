@@ -1,7 +1,9 @@
 import { MongoClient, Db } from 'mongodb';
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/busyahu';
-const DB_NAME = process.env.MONGO_DB_NAME || 'busyahu_db';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/busyahu_db';
+// Compose inyecta DATABASE_NAME y MONGO_DB_NAME; ambos apuntan a la misma base
+// sembrada por database/mongo-init.js.
+const DB_NAME = process.env.MONGO_DB_NAME || process.env.DATABASE_NAME || 'busyahu_db';
 
 let client: MongoClient | null = null;
 let dbInstance: Db | null = null;

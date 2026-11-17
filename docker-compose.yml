@@ -1,25 +1,40 @@
+name: busyahu
+
+# =============================================================================
+# BUSYAHU · STACK COMPLETO MULTI-FRAMEWORK
+# Arranque: docker compose up --build
+# Red interna: busyahu-network (mongo, express, fastapi, react y svelte)
+# =============================================================================
+
 services:
   # -------------------------------------------------------------
-  # 1. Base de Datos: MongoDB con persistencia y Seed de 11 países
+  # 1. Base de Datos: MongoDB 7 con persistencia y seed de 11 países
   # -------------------------------------------------------------
   mongo:
     image: mongo:7.0
     container_name: railworld_mongo
-    restart: always
+    restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-secretpassword}
-      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-railworld_db}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-busyahu_db}
     ports:
-      - "27017:27017"
+      - "${MONGO_PORT:-27017}:27017"
     volumes:
       - mongo_data:/data/db
       - ./database/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - busyahu-network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval \"db.adminCommand({ ping: 1 }).ok\"",
+        ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 12
+      start_period: 20s
 
   # -------------------------------------------------------------
   # 2. Backend 1: Node.js + Express (TypeScript)
@@ -29,11 +44,14 @@ services:
       context: ./backend-express
       dockerfile: Dockerfile
     container_name: railworld_backend_express
-    restart: always
+    restart: unless-stopped
     environment:
       PORT: ${PORT_EXPRESS:-4000}
-      MONGO_URI: ${MONGO_URI:-mongodb://admin:secretpassword@mongo:27017/railworld_db?authSource=admin}
-      DATABASE_NAME: ${MONGO_INITDB_DATABASE:-railworld_db}
+      PORT_EXPRESS: ${PORT_EXPRESS:-4000}
+      # Host interno resoluble por DNS de Docker: mongo:27017
+      MONGO_URI: ${MONGO_URI:-mongodb://admin:secretpassword@mongo:27017/busyahu_db?authSource=admin}
+      DATABASE_NAME: ${MONGO_INITDB_DATABASE:-busyahu_db}
+      MONGO_DB_NAME: ${MONGO_INITDB_DATABASE:-busyahu_db}
       JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_busyahu_prog3_2026_secure}
       CORS_ORIGIN: "*"
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
@@ -47,6 +65,18 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+    networks:
+      - busyahu-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:4000/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
 
   # -------------------------------------------------------------
   # 3. Backend 2: Python + FastAPI
@@ -56,17 +86,15 @@ services:
       context: ./backend-fastapi
       dockerfile: Dockerfile
     container_name: railworld_backend_fastapi
-    restart: always
+    restart: unless-stopped
     environment:
       PORT: ${PORT_FASTAPI:-8000}
-      MONGO_URI: ${MONGO_URI:-mongodb://admin:secretpassword@mongo:27017/railworld_db?authSource=admin}
-      DATABASE_NAME: ${MONGO_INITDB_DATABASE:-railworld_db}
+      # Se mantiene el host interno de Docker para evitar ENOTFOUND.
+      MONGO_URI: ${MONGO_URI:-mongodb://admin:secretpassword@mongo:27017/busyahu_db?authSource=admin}
+      DATABASE_NAME: ${MONGO_INITDB_DATABASE:-busyahu_db}
+      RUNNING_IN_DOCKER: "true"
       JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_busyahu_prog3_2026_secure}
       CORS_ORIGIN: "*"
-      # -------------------------------------------------------------
-      # Configuración de Envío de Correo Real (Gmail / SMTP)
-      # Toma automáticamente los valores de tu archivo .env
-      # -------------------------------------------------------------
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-${EMAIL_USER:-}}
@@ -82,36 +110,75 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+    networks:
+      - busyahu-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/api/health > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
 
   # -------------------------------------------------------------
-  # 4. Frontend 1: React 19 + Vite + Tailwind
+  # 4. Frontend 1: React + Vite + Tailwind (B2C)
   # -------------------------------------------------------------
   frontend-react:
     build:
       context: ./frontend-react
       dockerfile: Dockerfile
     container_name: railworld_frontend_react
-    restart: always
+    restart: unless-stopped
+    environment:
+      VITE_EXPRESS_API_URL: ${VITE_EXPRESS_API_URL:-http://localhost:4000/api}
+      VITE_FASTAPI_API_URL: ${VITE_FASTAPI_API_URL:-http://localhost:8000/api}
     ports:
-      - "${PORT_REACT:-5173}:80"
+      - "${PORT_REACT:-5173}:5173"
     depends_on:
-      - backend-express
-      - backend-fastapi
+      backend-express:
+        condition: service_healthy
+      backend-fastapi:
+        condition: service_healthy
+    networks:
+      - busyahu-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5173/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 25s
 
   # -------------------------------------------------------------
-  # 5. Frontend 2: Svelte 5 + Vite + Tailwind
+  # 5. Frontend 2: Svelte + Vite + Tailwind
   # -------------------------------------------------------------
   frontend-svelte:
     build:
       context: ./frontend-svelte
       dockerfile: Dockerfile
     container_name: railworld_frontend_svelte
-    restart: always
+    restart: unless-stopped
+    environment:
+      VITE_EXPRESS_API_URL: ${VITE_EXPRESS_API_URL:-http://localhost:4000/api}
+      VITE_FASTAPI_API_URL: ${VITE_FASTAPI_API_URL:-http://localhost:8000/api}
     ports:
       - "${PORT_SVELTE:-5174}:80"
     depends_on:
-      - backend-express
-      - backend-fastapi
+      backend-express:
+        condition: service_healthy
+      backend-fastapi:
+        condition: service_healthy
+    networks:
+      - busyahu-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+networks:
+  busyahu-network:
+    name: busyahu-network
+    driver: bridge
 
 volumes:
   mongo_data:

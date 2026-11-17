@@ -2,6 +2,11 @@
 FROM node:20 AS build
 
 WORKDIR /app
+COPY package*.json ./
+# El lockfile puede haberse generado en Windows y omitir los binarios nativos
+# de Rollup para Linux/musl. Resolvemos las dependencias para la plataforma
+# del contenedor para que el build sea reproducible en cualquier host.
+RUN npm install --no-package-lock
 COPY package.json ./
 RUN npm install
 COPY . .

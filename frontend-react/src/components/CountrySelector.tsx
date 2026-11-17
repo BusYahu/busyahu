@@ -1,4 +1,5 @@
 import { Destination } from '../types';
+import { Flag } from './landing/Flag';
 
 interface CountrySelectorProps {
   destinations: Destination[];
@@ -41,7 +42,11 @@ export function CountrySelector({
                   : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 hover:scale-[1.01]'
               }`}
             >
-              <span className="text-2xl sm:text-3xl drop-shadow-xs">{dest.flagEmoji}</span>
+              <Flag
+                code={dest.countryCode}
+                country={dest.country}
+                className="h-8 w-11 rounded-lg shadow-sm sm:h-9 sm:w-12"
+              />
               <div className="min-w-0 flex-1">
                 <div className={`text-xs font-bold truncate ${isSelected ? 'text-indigo-950' : 'text-slate-900'}`}>
                   {dest.country}
