@@ -1,5 +1,5 @@
 # Etapa 1: Build de la aplicación con Node 20
-FROM node:20-alpine AS build
+FROM node:20 AS build
 
 WORKDIR /app
 COPY package*.json ./
@@ -7,6 +7,8 @@ COPY package*.json ./
 # de Rollup para Linux/musl. Resolvemos las dependencias para la plataforma
 # del contenedor para que el build sea reproducible en cualquier host.
 RUN npm install --no-package-lock
+COPY package.json ./
+RUN npm install
 COPY . .
 RUN npm run build
 

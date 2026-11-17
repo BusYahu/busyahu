@@ -125,12 +125,12 @@
   }
 </script>
 
-<div id="seat-selection-view" class="max-w-6xl mx-auto space-y-8 pb-16">
+<div id="seat-selection-view" class="max-w-6xl mx-auto space-y-8 pb-16 animate-fade-up">
   <!-- Top Breadcrumb & Stepper -->
   <div class="flex items-center justify-between">
     <button
       onclick={onBack}
-      class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600 transition-colors bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm"
+      class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600 transition-colors glass-card px-3 py-1.5 rounded-xl  shadow-sm"
     >
       <ArrowLeft class="w-4 h-4" />
       <span>Volver a la búsqueda de trenes</span>
@@ -206,7 +206,7 @@
     <!-- Left Column: Carriage & Passengers -->
     <div class="lg:col-span-7 space-y-8">
       <!-- Carriage Map -->
-      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+      <div class="glass-card rounded-2xl  p-6 shadow-sm space-y-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
           <div>
             <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
@@ -335,7 +335,7 @@
       </div>
 
       <!-- Passenger details form -->
-      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+      <div class="glass-card rounded-2xl  p-6 shadow-sm space-y-6">
         <div>
           <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
             <User class="w-5 h-5 text-indigo-600" />
@@ -410,7 +410,7 @@
 
     <!-- Right Column: Order Summary & Checkout -->
     <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
-      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-md space-y-6">
+      <div class="glass-card rounded-2xl  p-6 shadow-md space-y-6">
         <h3 class="text-lg font-black text-slate-900 pb-3 border-b border-slate-100 flex items-center justify-between">
           <span>Resumen de la Compra</span>
           <span class="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
