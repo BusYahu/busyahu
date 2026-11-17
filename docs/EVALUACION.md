@@ -3,7 +3,7 @@
 
 > Documento **generado automáticamente** por la cátedra de Programación III (RepoSense + análisis de calidad + constancia). **No editar a mano**: se regenera en cada evaluación.
 > Rama evaluada: `main`. Análisis **heurístico** (regex + métricas): es una criba para orientar la revisión, **no una nota**.
-> Generado: 2026-11-16.
+> Generado: 2026-11-17.
 
 ## 1. Veredicto
 
@@ -232,12 +232,13 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 | 2026-11-11 | No | sin actividad | 0 / 0 |
 | 2026-11-13 | No | sin actividad | 0 / 0 |
 
-**Fuera de clase:** 2 fecha(s) con actividad · 3 commits · 1 merges
+**Fuera de clase:** 3 fecha(s) con actividad · 3 commits · 1 merges
 
 | Fecha | Repositorios | Commits / merges |
 |---|---|--:|
 | 2026-10-31 | busyahu | 2 / 0 |
-| 2026-11-14 | busyahu | 1 / 1 |
+| 2026-11-14 | busyahu | 1 / 0 |
+| 2026-11-16 | busyahu | 0 / 1 |
 
 ### Valentino Dilello
 
@@ -273,7 +274,7 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 | 2026-11-11 | **Sí** | busyahu | 1 / 0 |
 | 2026-11-13 | No | sin actividad | 0 / 0 |
 
-**Fuera de clase:** 6 fecha(s) con actividad · 5 commits · 4 merges
+**Fuera de clase:** 7 fecha(s) con actividad · 5 commits · 4 merges
 
 | Fecha | Repositorios | Commits / merges |
 |---|---|--:|
@@ -282,7 +283,8 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 | 2026-09-06 | busyahu | 1 / 0 |
 | 2026-09-07 | busyahu | 0 / 2 |
 | 2026-11-03 | busyahu | 1 / 1 |
-| 2026-11-14 | busyahu | 1 / 1 |
+| 2026-11-14 | busyahu | 1 / 0 |
+| 2026-11-16 | busyahu | 0 / 1 |
 
 ## 7. Anexo: dónde mirar
 
