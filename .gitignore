@@ -21,9 +21,17 @@ build/
 mongo_data/
 *.log
 
+# Cobertura y reportes de calidad
+coverage/
+coverage.xml
+.coverage
+lcov.info
+coverage-summary.json
+.jscpd-report/
+.jscpd20/
+
 # Editores y Sistema Operativo
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-EOF

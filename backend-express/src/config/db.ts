@@ -1,4 +1,5 @@
 import { MongoClient, Db } from 'mongodb';
+import { logger } from './logger';
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/busyahu_db';
 // Compose inyecta DATABASE_NAME y MONGO_DB_NAME; ambos apuntan a la misma base
@@ -11,16 +12,11 @@ let dbInstance: Db | null = null;
 export async function connectDB(): Promise<Db> {
   if (dbInstance) return dbInstance;
 
-  try {
-    client = new MongoClient(MONGO_URI);
-    await client.connect();
-    dbInstance = client.db(DB_NAME);
-    console.log(`[MongoDB] Conectado exitosamente a la base: ${DB_NAME}`);
-    return dbInstance;
-  } catch (error) {
-    console.error('[MongoDB Error] Fallo al conectar con la base de datos:', error);
-    process.exit(1);
-  }
+  client = new MongoClient(MONGO_URI);
+  await client.connect();
+  dbInstance = client.db(DB_NAME);
+  logger.info(`[MongoDB] Conectado exitosamente a la base: ${DB_NAME}`);
+  return dbInstance;
 }
 
 export function getDB(): Db {
@@ -28,4 +24,20 @@ export function getDB(): Db {
     throw new Error('La base de datos no está inicializada. Llama a connectDB primero.');
   }
   return dbInstance;
+}
+
+/**
+ * Inyección de dependencia para tests: permite usar una base en memoria sin
+ * levantar MongoDB. Con `null` se restablece el estado inicial.
+ */
+export function setDB(db: Db | null): void {
+  dbInstance = db;
+}
+
+export async function closeDB(): Promise<void> {
+  if (client) {
+    await client.close();
+    client = null;
+  }
+  dbInstance = null;
 }

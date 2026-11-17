@@ -1,9 +1,9 @@
 import { INITIAL_DESTINATIONS, INITIAL_TRAIN_ROUTES } from '../mockData';
 import type { Booking, Destination, Passenger, TrainRoute } from '../types';
-import { canonicalSeatClass, normalizeBooking } from './normalizers';
+import { normalizeBooking } from './normalizers';
 import { readCachedBookings, saveCachedBookings } from './storage';
 
-interface MockBookingPayload {
+export interface MockBookingPayload {
   trainId?: string;
   train?: TrainRoute;
   travelDate: string;
@@ -11,6 +11,18 @@ interface MockBookingPayload {
   totalPrice: number;
   currency?: string;
   userEmail?: string;
+}
+
+export interface MockAdapter {
+  getDestinations: () => Destination[];
+  searchTrains: (filters?: Record<string, unknown>) => { total: number; trains: TrainRoute[] };
+  getTrain: (trainId: string) => TrainRoute | null;
+  getSeatMap: (trainId: string, date: string) => unknown;
+  createBooking: (payload: MockBookingPayload) => Booking;
+  getMyBookings: () => Booking[];
+  getBooking: (bookingId: string) => Booking | null;
+  cancelBooking: (bookingId: string) => Booking | null;
+  normalizeCachedBooking: (raw: unknown) => Booking;
 }
 
 export function buildMockDestinations(): Destination[] {
@@ -43,38 +55,36 @@ function pseudoRandomBookingCode(train: TrainRoute | undefined): string {
   return `RW-${prefix}-${number}`;
 }
 
-export class MockAdapter {
-  destinations: Destination[];
-  trains: TrainRoute[];
-  bookings: Booking[];
+export function createMockAdapter(): MockAdapter {
+  const state = {
+    destinations: buildMockDestinations(),
+    trains: [] as TrainRoute[],
+    bookings: readCachedBookings() as Booking[],
+  };
+  state.trains = buildMockTrains(state.destinations);
 
-  constructor() {
-    this.destinations = buildMockDestinations();
-    this.trains = buildMockTrains(this.destinations);
-    this.bookings = readCachedBookings();
+  function getDestinations(): Destination[] {
+    return state.destinations;
   }
 
-  getDestinations(): Destination[] {
-    return this.destinations;
-  }
-
-  searchTrains(filters: Record<string, unknown> = {}): { total: number; trains: TrainRoute[] } {
+  function searchTrains(filters: Record<string, unknown> = {}): {
+    total: number;
+    trains: TrainRoute[];
+  } {
     const country = String(filters.country ?? '').toLowerCase().trim();
     const from = String(filters.from ?? '').toLowerCase().trim();
     const to = String(filters.to ?? '').toLowerCase().trim();
 
-    const trains = this.trains.filter((train) => {
+    const trains = state.trains.filter((train) => {
       const matchCountry = country
         ? train.country.toLowerCase() === country ||
           (train.countryCode ?? '').toLowerCase() === country
         : true;
       const matchFrom = from
-        ? train.fromCity.toLowerCase() === from ||
-          train.fromStation.toLowerCase().includes(from)
+        ? train.fromCity.toLowerCase() === from || train.fromStation.toLowerCase().includes(from)
         : true;
       const matchTo = to
-        ? train.toCity.toLowerCase() === to ||
-          train.toStation.toLowerCase().includes(to)
+        ? train.toCity.toLowerCase() === to || train.toStation.toLowerCase().includes(to)
         : true;
       return matchCountry && matchFrom && matchTo;
     });
@@ -82,16 +92,12 @@ export class MockAdapter {
     return { total: trains.length, trains };
   }
 
-  getTrain(trainId: string): TrainRoute | null {
-    return (
-      this.trains.find(
-        (train) => train.id === trainId || train.trainNumber === trainId,
-      ) ?? null
-    );
+  function getTrain(trainId: string): TrainRoute | null {
+    return state.trains.find((train) => train.id === trainId || train.trainNumber === trainId) ?? null;
   }
 
-  getSeatMap(trainId: string, date: string) {
-    const train = this.getTrain(trainId) ?? this.trains[0];
+  function getSeatMap(trainId: string, date: string): unknown {
+    const train = getTrain(trainId) ?? state.trains[0];
     const carriages = [1, 2, 3].map((carriageNumber) => ({
       carriageNumber,
       classType: carriageNumber === 1 ? 'First' : 'Standard',
@@ -101,7 +107,10 @@ export class MockAdapter {
           row: rowIndex + 1,
           column,
           classType: carriageNumber === 1 ? 'First' : 'Standard',
-          status: rowIndex === 0 && (column === 'C' || column === 'D') ? ('ocupado' as const) : ('libre' as const),
+          status:
+            rowIndex === 0 && (column === 'C' || column === 'D')
+              ? ('ocupado' as const)
+              : ('libre' as const),
           price: train ? Number((train.basePrice * (carriageNumber === 1 ? 1.4 : 1)).toFixed(2)) : 0,
         })),
       ),
@@ -117,17 +126,10 @@ export class MockAdapter {
     };
   }
 
-  createBooking(payload: MockBookingPayload): Booking {
-    const train =
-      payload.train ??
-      this.getTrain(String(payload.trainId ?? '')) ??
-      this.trains[0];
-
+  function createBooking(payload: MockBookingPayload): Booking {
+    const train = payload.train ?? getTrain(String(payload.trainId ?? '')) ?? state.trains[0];
     const bookingCode = pseudoRandomBookingCode(train);
-    const passengers = (payload.passengers ?? []).map((passenger) => ({
-      ...passenger,
-      seatClass: passenger.seatClass,
-    }));
+    const passengers = (payload.passengers ?? []).map((passenger) => ({ ...passenger }));
     const firstName = (passengers[0]?.fullName ?? 'VIAJERO').toUpperCase().replace(/\s+/g, '_');
     const booking: Booking = {
       id: `BK-MOCK-${Date.now()}`,
@@ -147,34 +149,40 @@ export class MockAdapter {
       backend: 'mock',
     };
 
-    this.bookings = [booking, ...this.bookings];
-    saveCachedBookings(this.bookings);
+    state.bookings = [booking, ...state.bookings];
+    saveCachedBookings(state.bookings);
     return booking;
   }
 
-  getMyBookings(): Booking[] {
-    return this.bookings;
+  function getMyBookings(): Booking[] {
+    return state.bookings;
   }
 
-  getBooking(bookingId: string): Booking | null {
+  function getBooking(bookingId: string): Booking | null {
     return (
-      this.bookings.find(
+      state.bookings.find(
         (booking) => booking.id === bookingId || booking.bookingCode === bookingId,
       ) ?? null
     );
   }
 
-  cancelBooking(bookingId: string): Booking | null {
-    const booking = this.getBooking(bookingId);
+  function cancelBooking(bookingId: string): Booking | null {
+    const booking = getBooking(bookingId);
     if (!booking) return null;
     booking.status = 'cancelled';
-    saveCachedBookings(this.bookings);
-    return normalizeBooking(booking, this.destinations);
+    saveCachedBookings(state.bookings);
+    return normalizeBooking(booking, state.destinations);
   }
 
-  normalizeCachedBooking(raw: unknown): Booking {
-    return normalizeBooking(raw, this.destinations);
-  }
-
-  canonicalSeatClass = canonicalSeatClass;
+  return {
+    getDestinations,
+    searchTrains,
+    getTrain,
+    getSeatMap,
+    createBooking,
+    getMyBookings,
+    getBooking,
+    cancelBooking,
+    normalizeCachedBooking: (raw: unknown) => normalizeBooking(raw, state.destinations),
+  };
 }

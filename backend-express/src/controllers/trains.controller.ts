@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import { getDB } from '../config/db';
+import { logger } from '../config/logger';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { IDestination, ITrain, ICarriageSeatsResponse, ISeatStatus } from '../models/train.model';
 
@@ -26,7 +27,7 @@ export async function getDestinations(req: Request, res: Response): Promise<void
       }))
     });
   } catch (error) {
-    console.error('Error al obtener destinos:', error);
+    logger.error('Error al obtener destinos:', error);
     res.status(500).json({ error: 'Internal Server Error', message: 'Error al consultar destinos.' });
   }
 }
@@ -77,7 +78,7 @@ export async function searchTrains(req: Request, res: Response): Promise<void> {
       trains: results
     });
   } catch (error) {
-    console.error('Error en búsqueda de trenes:', error);
+    logger.error('Error en búsqueda de trenes:', error);
     res.status(500).json({ error: 'Internal Server Error', message: 'Error al buscar trenes.' });
   }
 }
@@ -117,7 +118,7 @@ export async function getTrainById(req: Request, res: Response): Promise<void> {
       carriages: train.carriages
     });
   } catch (error) {
-    console.error('Error al obtener tren:', error);
+    logger.error('Error al obtener tren:', error);
     res.status(500).json({ error: 'Internal Server Error', message: 'Error al consultar el tren.' });
   }
 }
@@ -200,7 +201,7 @@ export async function getTrainSeats(req: Request, res: Response): Promise<void> 
       carriages: carriagesResponse
     });
   } catch (error) {
-    console.error('Error al generar mapa de asientos:', error);
+    logger.error('Error al generar mapa de asientos:', error);
     res.status(500).json({ error: 'Internal Server Error', message: 'Error al generar mapa de asientos.' });
   }
 }
@@ -284,7 +285,7 @@ export async function createTrain(req: AuthRequest, res: Response): Promise<void
       message: 'Ruta creada exitosamente.',
     });
   } catch (error) {
-    console.error('Error al crear tren:', error);
+    logger.error('Error al crear tren:', error);
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Error al crear la ruta.',
