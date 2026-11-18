@@ -3,25 +3,25 @@
 
 > Documento **generado automáticamente** por la cátedra de Programación III (RepoSense + análisis de calidad + constancia). **No editar a mano**: se regenera en cada evaluación.
 > Rama evaluada: `main`. Análisis **heurístico** (regex + métricas): es una criba para orientar la revisión, **no una nota**.
-> Generado: 2026-11-17.
+> Generado: 2026-11-18.
 
 ## 1. Veredicto
 
 | Aspecto | Resultado |
 |---|---|
 | Tipo de proyecto | app |
-| Índice de calidad de servicios | **20/100** (mínimo 50) |
+| Índice de calidad de servicios | **19/100** (mínimo 50) |
 | Criterios cumplidos | **9/16** |
 | Aprobado (semáforo) | **NO** |
-| Código (LOC) | 15,254 |
-| Archivos de código | 83 |
+| Código (LOC) | 16,793 |
+| Archivos de código | 93 |
 | Tests (archivos) | 1 |
 | Cobertura de líneas | no medible (mínimo 80%) |
 | Capas detectadas | presentacion, datos, vistas, servicios, estado |
-| Pushes directos a `main` (sin PR) | 1 |
+| Pushes directos a `main` (sin PR) | 3 |
 | Tope por duplicación | `DUP>=15%` → índice ≤ 50 |
 
-> **Pushes directos:** se detectaron **1** commit(s) a `main` que no pasaron por un Pull Request. El flujo esperado es **rama → PR → revisión → merge**; el PR se aprueba con el mensaje `Aprobado`. Evitá pushear directo a `main`: la ruleset lo bloquea y el commit directo queda auditado.
+> **Pushes directos:** se detectaron **3** commit(s) a `main` que no pasaron por un Pull Request. El flujo esperado es **rama → PR → revisión → merge**; el PR se aprueba con el mensaje `Aprobado`. Evitá pushear directo a `main`: la ruleset lo bloquea y el commit directo queda auditado.
 
 > **Aprobado** exige las compuertas críticas (**SEC**, **SQL**, **capas**, **índice ≥ 50** y **cobertura ≥ 80 %** cuando aplica) y tolera hasta **3 criterios en rojo** (12/15). No es una nota: sirve para ordenar y priorizar la revisión.
 
@@ -29,12 +29,12 @@
 
 | Autor | Commits | Código (LOC) | Tests (LOC) | Docs (LOC) | Días activos | % del código |
 |---|---:|---:|---:|---:|---:|---:|
-| Lauti Gómez | 11 | 7,583 | 0 | 208 | 8 | 64% |
-| Valentino Dilello | 15 | 4,200 | 0 | 23,668 | 18 | 36% |
+| Lauti Gómez | 14 | 9,287 | 0 | 243 | 11 | 68% |
+| Valentino Dilello | 17 | 4,340 | 0 | 23,662 | 21 | 32% |
 
 > _El LOC de autoría lo calcula RepoSense sobre el historial y puede diferir del LOC de código del análisis de calidad (que mira solo el estado de `main`)._
 
-> **Reparto del trabajo:** Lauti Gómez concentra el 64% de las líneas de código. Un reparto muy desigual suele indicar que la integración no fue realmente en equipo; vale la pena reconstruir cómo se coordinó.
+> **Reparto del trabajo:** Lauti Gómez concentra el 68% de las líneas de código. Un reparto muy desigual suele indicar que la integración no fue realmente en equipo; vale la pena reconstruir cómo se coordinó.
 
 ## 3. Constancia (IC) — todas las ramas
 
@@ -42,8 +42,8 @@
 
 | Alumno | Sesiones | Cumplimiento | Pausa | Recencia | IC | Nivel | Para subir de nivel |
 |---|--:|--:|--:|--:|--:|--|--|
-| Lauti Gómez | 9 | 33% | 35 d | 29% | **26** | No aprueba | Cumplimiento 33% (mín. 50%); Recencia 29% (mín. 50%) |
-| Valentino Dilello | 15 | 55% | 21 d | 86% | **48** | Aprueba | Cumplimiento 55% (mín. 100%); Pausa 21 d (máx. 5 d) |
+| Lauti Gómez | 10 | 36% | 35 d | 93% | **36** | No aprueba | Cumplimiento 36% (mín. 50%) |
+| Valentino Dilello | 15 | 54% | 21 d | 71% | **45** | Aprueba | Cumplimiento 54% (mín. 100%); Pausa 21 d (máx. 5 d); Recencia 71% (mín. 75%) |
 
 > Para aprobar el IC: **2 sesiones por semana** sostenidas, sin pausas mayores a **10 días** y con actividad en las **últimas 2 semanas**. Se excluyen merges, bots y al docente. Zona horaria UTC-3.
 
@@ -55,7 +55,7 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 - **Qué mide:** Un resumen numérico (0-100) que combina todas las señales y métricas del análisis, con topes duros por duplicación.
 - **Por qué importa:** Ordena y prioriza la revisión: un índice bajo indica varias señales que conviene mirar juntas.
-- **Tu resultado:** índice **20/100** _(mínimo 50)_
+- **Tu resultado:** índice **19/100** _(mínimo 50)_
 - **Para investigar la causa:**
     - ¿En qué momento del proyecto se concentraron los problemas (arranque, integración de partes, cierre)?
     - ¿El índice bajó por muchas señales chicas o por una o dos graves?
@@ -65,7 +65,7 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 - **Qué mide:** Porcentaje de bloques de código repetidos (similitud) en el repositorio.
 - **Por qué importa:** Cada copia se mantiene por separado: un arreglo hay que repetirlo y los defectos se multiplican.
-- **Tu resultado:** **23.1%** de duplicación _(máximo 15%)_
+- **Tu resultado:** **20.6%** de duplicación _(máximo 15%)_
 - **Para investigar la causa:**
     - ¿El trabajo se repartió por pantallas o archivos y se integró copiando y pegando bloques?
     - ¿Qué zonas del sistema cambiaron juntas más de una vez (señal de lógica compartida)?
@@ -119,7 +119,7 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 - **Qué mide:** Componentes de UI muy extensos, que suelen mezclar render, estado y lógica.
 - **Por qué importa:** Son difíciles de leer, probar y reutilizar, y sus cambios tienen efectos inesperados.
-- **Tu resultado:** **18** componente(s) demasiado grande(s) _(máximo 1)_
+- **Tu resultado:** **21** componente(s) demasiado grande(s) _(máximo 1)_
 - **Para investigar la causa:**
     - ¿El componente creció a medida que se agregaban requisitos, sin volver a dividirlo?
     - ¿Mezcla responsabilidades distintas (mostrar, calcular, pedir datos)?
@@ -139,13 +139,13 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 - **Qué mide:** Complejidad ciclomática: cantidad de caminos posibles dentro de una función (condicionales, bucles, casos).
 - **Por qué importa:** Muchos caminos = difícil de seguir y de probar; suelen esconderse casos sin cubrir.
-- **Tu resultado:** **70** bloque(s) de complejidad alta _(máximo 5 por 1000 LOC (tenés 15254 LOC))_
+- **Tu resultado:** **71** bloque(s) de complejidad alta _(máximo 5 por 1000 LOC (tenés 16793 LOC))_
 
 ### 12. Funciones/métodos largos o con muchos parámetros (Tam) — OK
 
 - **Qué mide:** Tamaño de las funciones/métodos y cantidad de parámetros.
 - **Por qué importa:** Una función que hace varias cosas cuesta leerla, nombrarla y reutilizarla.
-- **Tu resultado:** **55** función/método(s) largos o con muchos parámetros _(máximo 10 por 1000 LOC)_
+- **Tu resultado:** **57** función/método(s) largos o con muchos parámetros _(máximo 10 por 1000 LOC)_
 
 ### 13. Acoplamiento alto (Acop) — OK
 
@@ -174,7 +174,7 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 - **Qué mide:** Cantidad de vistas/componentes de pantalla del frontend.
 - **Por qué importa:** El frontend se mide por pantallas: pocas vistas sugiere poca cobertura de la interfaz pedida.
-- **Tu resultado:** **26** vista(s)/componente(s) _(mínimo 6)_
+- **Tu resultado:** **35** vista(s)/componente(s) _(mínimo 6)_
 
 ## 5. Observaciones y qué falta
 
@@ -182,11 +182,11 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 
 | Criterio | Resultado actual | Meta | Brecha | Cómo alcanzarlo |
 |---|---|---|---|---|
-| Índice de calidad de servicios (indice) | índice **20/100** | mínimo 50 | faltan 30 pts | El índice sólo penaliza lo que **excede** los umbrales de cada criterio: si tenés todo en verde, el índice es 100. Si está en rojo, mirá la columna **Brecha** y los criterios en rojo; corregí primero duplicación, SEC, SQL y capas. Meta del perfil exigente: ≥50. |
-| Duplicación (DRY) (duplicacion) | **23.1%** de duplicación | máximo 15% | sobran 8.1 pts | Ubicá los bloques repetidos con `jscpd` o SonarQube, llevá la lógica común a una función o módulo compartido y hacé que todos lo usen. Cada copia eliminada baja el porcentaje; meta ≤15%. |
+| Índice de calidad de servicios (indice) | índice **19/100** | mínimo 50 | faltan 31 pts | El índice sólo penaliza lo que **excede** los umbrales de cada criterio: si tenés todo en verde, el índice es 100. Si está en rojo, mirá la columna **Brecha** y los criterios en rojo; corregí primero duplicación, SEC, SQL y capas. Meta del perfil exigente: ≥50. |
+| Duplicación (DRY) (duplicacion) | **20.6%** de duplicación | máximo 15% | sobran 5.6 pts | Ubicá los bloques repetidos con `jscpd` o SonarQube, llevá la lógica común a una función o módulo compartido y hacé que todos lo usen. Cada copia eliminada baja el porcentaje; meta ≤15%. |
 | Acceso a datos dentro del componente (HTTP) | **1** llamada(s) a la API dentro de componente(s) | máximo 0 | 1 caso(s) a eliminar | Creá una capa de servicios/API (un módulo por recurso) que centralice `fetch`/`axios` y consumila desde los componentes; así el acceso a datos deja de estar duplicado en las vistas. Meta: 0 casos. |
 | Depuración olvidada (DBG) | **6** mensaje(s) de depuración olvidado(s) | máximo 0 | 6 caso(s) a eliminar | Borrá `console.log`/`print`/`debugger` del código de producción. Si necesitás registro, usá el logger del proyecto con el nivel adecuado. Meta: 0 casos. |
-| Componente demasiado grande (BigC) | **18** componente(s) demasiado grande(s) | máximo 1 | 17 componente(s) de más | Dividí el componente por responsabilidad en subcomponentes (render, estado, acceso a datos) y dejá el original sólo como orquestador. Meta: ≤1 componente grande. |
+| Componente demasiado grande (BigC) | **21** componente(s) demasiado grande(s) | máximo 1 | 20 componente(s) de más | Dividí el componente por responsabilidad en subcomponentes (render, estado, acceso a datos) y dejá el original sólo como orquestador. Meta: ≤1 componente grande. |
 | Baja cohesión (Coh) | **4** unidad(es) con baja cohesión | máximo 0 | 4 clase(s) a separar | Separá la clase en unidades con una sola responsabilidad: si los métodos cambian por motivos distintos, son clases distintas. Meta: 0 clases con baja cohesión. |
 | Cobertura de tests (Cob) | **no medible** — backend-fastapi: pytest no generó cobertura: INTERNALERROR> File "test_smtp.py", line 149, in <module> · INTERNALERROR> sys.exit(1) · INTERNALERROR> SystemExit: 1 | mínimo 80% de líneas | no medible: generá el artefacto o corré la suite | Revisá que la suite corra en un clon limpio (sin base de datos ni servicios externos) y que las dependencias de test estén declaradas. Agregá o ampliá tests que ejecuten los módulos sin cubrir (camino principal y errores) y publicá el artefacto (`coverage/lcov.info`, `coverage-summary.json`, `coverage.xml` o `coverage.json`) o corré la suite con coverage. Meta: ≥80% de líneas. |
 
@@ -196,11 +196,11 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 
 ## 6. Actividad en clase y fuera de clase
 
-> Se consideran las **27 clases** del período (miércoles y viernes, según `config/constancia.json`; feriados y semanas sin clase descontados). Para cada alumno se muestra la actividad **en cada clase** y también la actividad **fuera de los días de clase** (fines de semana u otros días). `Commits` = commits de trabajo (no-merge); `Merges` = merges de PR (también son push). Los días sin actividad dicen **sin actividad**.
+> Se consideran las **28 clases** del período (miércoles y viernes, según `config/constancia.json`; feriados y semanas sin clase descontados). Para cada alumno se muestra la actividad **en cada clase** y también la actividad **fuera de los días de clase** (fines de semana u otros días). `Commits` = commits de trabajo (no-merge); `Merges` = merges de PR (también son push). Los días sin actividad dicen **sin actividad**.
 
 ### Lauti Gómez
 
-**8/27 clases con actividad** · total del período: 13 commits · 1 merges
+**8/28 clases con actividad** · total del período: 13 commits · 1 merges
 
 | Fecha | Actividad | Repositorios | Commits / merges |
 |---|:--:|---|--:|
@@ -231,18 +231,19 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 | 2026-11-06 | **Sí** | busyahu | 2 / 0 |
 | 2026-11-11 | No | sin actividad | 0 / 0 |
 | 2026-11-13 | No | sin actividad | 0 / 0 |
+| 2026-11-18 | No | sin actividad | 0 / 0 |
 
-**Fuera de clase:** 3 fecha(s) con actividad · 3 commits · 1 merges
+**Fuera de clase:** 3 fecha(s) con actividad · 4 commits · 2 merges
 
 | Fecha | Repositorios | Commits / merges |
 |---|---|--:|
 | 2026-10-31 | busyahu | 2 / 0 |
 | 2026-11-14 | busyahu | 1 / 0 |
-| 2026-11-16 | busyahu | 0 / 1 |
+| 2026-11-17 | busyahu | 1 / 2 |
 
 ### Valentino Dilello
 
-**14/27 clases con actividad** · total del período: 13 commits · 8 merges
+**14/28 clases con actividad** · total del período: 13 commits · 8 merges
 
 | Fecha | Actividad | Repositorios | Commits / merges |
 |---|:--:|---|--:|
@@ -273,6 +274,7 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 | 2026-11-06 | No | sin actividad | 0 / 0 |
 | 2026-11-11 | **Sí** | busyahu | 1 / 0 |
 | 2026-11-13 | No | sin actividad | 0 / 0 |
+| 2026-11-18 | No | sin actividad | 0 / 0 |
 
 **Fuera de clase:** 7 fecha(s) con actividad · 5 commits · 4 merges
 
@@ -284,7 +286,7 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 | 2026-09-07 | busyahu | 0 / 2 |
 | 2026-11-03 | busyahu | 1 / 1 |
 | 2026-11-14 | busyahu | 1 / 0 |
-| 2026-11-16 | busyahu | 0 / 1 |
+| 2026-11-17 | busyahu | 0 / 1 |
 
 ## 7. Anexo: dónde mirar
 
@@ -300,12 +302,15 @@ Archivos donde el análisis encontró cada señal en rojo (sin número de línea
 - `frontend-svelte/src/components/TicketConfirmationView.svelte`
 - `frontend-svelte/src/lib/components/SearchView.svelte`
 
-**Componente demasiado grande (BigC)** — 18 archivo(s):
+**Componente demasiado grande (BigC)** — 21 archivo(s):
 - `frontend-react/src/App.tsx`
 - `frontend-react/src/components/AdminRouteManagementView.tsx`
 - `frontend-react/src/components/ConnectivityHub.tsx`
 - `frontend-react/src/components/MyBookings.tsx`
 - `frontend-react/src/components/SeatMap.tsx`
+- `frontend-react/src/components/landing/HeroCarousel.tsx`
+- `frontend-react/src/components/landing/SiteFooter.tsx`
+- `frontend-react/src/components/landing/TrainResults.tsx`
 - `frontend-svelte/src/App.svelte`
 - `frontend-svelte/src/components/AuthModal.svelte`
 - `frontend-svelte/src/components/ConnectivityHub.svelte`
