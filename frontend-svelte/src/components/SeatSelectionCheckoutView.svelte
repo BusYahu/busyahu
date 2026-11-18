@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { TrainRoute, Passenger } from '../types';
   import type { SeatClassTier } from '../lib/searchFilters';
+  import { classMultiplier, priceForClass } from '../lib/seatClasses';
   import CheckoutStepper from './checkout/CheckoutStepper.svelte';
   import TrainSummaryBanner from './checkout/TrainSummaryBanner.svelte';
   import CarriageSeatPicker from './checkout/CarriageSeatPicker.svelte';
@@ -38,10 +39,7 @@
   let isProcessing = $state(false);
   let validationError = $state<string | null>(null);
 
-  const classMultiplier = $derived(
-    selectedClass === 'business' ? 1.8 : selectedClass === 'first' ? 1.4 : 1.0
-  );
-  const singlePrice = $derived(Math.round(train.basePrice * classMultiplier));
+  const singlePrice = $derived(priceForClass(train.basePrice, selectedClass));
   const subtotal = $derived(singlePrice * passengerCount);
   const taxes = $derived(Math.round(subtotal * 0.1));
   const totalPrice = $derived(subtotal + taxes);

@@ -61,7 +61,7 @@ jobs:
           name: coverage-express
           path: |
             backend-express/coverage/
-            backend-express/coverage-summary.json
+            backend-express/coverage/coverage-summary.json
           if-no-files-found: warn
 
   frontend-react:
@@ -79,6 +79,8 @@ jobs:
           cache-dependency-path: frontend-react/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Run unit tests
+        run: npm test
       - name: Build
         run: npm run build
       - name: Publish build artifact
@@ -103,6 +105,8 @@ jobs:
           cache-dependency-path: frontend-svelte/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Run unit tests
+        run: npm test
       - name: Type check
         run: npm run check
       - name: Build

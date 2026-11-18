@@ -2,6 +2,7 @@
   import { ArrowRight, Check, Clock, Coffee, Luggage, VolumeX, Wifi, Zap } from 'lucide-svelte';
   import type { TrainRoute } from '../../types';
   import type { SeatClassTier } from '../../lib/searchFilters';
+  import { FARES } from '../../lib/seatClasses';
 
   interface Props {
     train: TrainRoute;
@@ -12,11 +13,7 @@
 
   let { train, currencySymbol, selectedClassTier = $bindable(), onSelect }: Props = $props();
 
-  const fares: Array<{ id: SeatClassTier; label: string; detail: string; multiplier: number }> = [
-    { id: 'tourist', label: 'Turista', detail: 'Estándar reclinable', multiplier: 1 },
-    { id: 'first', label: 'Primera', detail: 'Extra espacio + café', multiplier: 1.4 },
-    { id: 'business', label: 'Gran Clase', detail: 'Sala VIP + Menú', multiplier: 1.8 }
-  ];
+  const fares = FARES;
 
   const amenities = [
     { icon: Wifi, tone: 'text-indigo-600', label: 'WiFi gratuito' },
