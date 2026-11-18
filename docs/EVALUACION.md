@@ -288,49 +288,117 @@ Criterios que hoy están en rojo y, para cada uno, una explicación breve de **c
 | 2026-11-14 | busyahu | 1 / 0 |
 | 2026-11-17 | busyahu | 0 / 1 |
 
-## 7. Anexo: dónde mirar
+## 7. Anexo: archivos donde se originan los problemas
 
-Archivos donde el análisis encontró cada señal en rojo (sin número de línea, a propósito):
+Se listan los archivos y líneas que el análisis marca para cada criterio en rojo. Para **duplicación** se muestran los archivos con más líneas repetidas; para **cobertura**, las unidades por debajo del umbral.
 
-**Acceso a datos dentro del componente (HTTP)** — 1 archivo(s):
-- `frontend-svelte/src/components/ProjectManagementView.svelte`
+**Índice (indice)** — señales que más pesan:
 
-**Depuración olvidada (DBG)** — 5 archivo(s):
-- `backend-express/src/config/db.ts`
-- `backend-express/src/server.ts`
-- `frontend-react/src/components/ETicketModal.tsx`
-- `frontend-svelte/src/components/TicketConfirmationView.svelte`
-- `frontend-svelte/src/lib/components/SearchView.svelte`
+- `scripts/verify-interop.mjs:273` — high_complexity: función 'diffShapes' con complejidad 10
+- `busyahu/src/App.jsx:7` — long_function: función 'App' de 110 líneas
+- `frontend-svelte/src/App.svelte:68` — high_complexity: función 'handleCreateRoute' con complejidad 6
+- `frontend-svelte/src/App.svelte:228` — long_function: función 'handleConfirmBooking' de 72 líneas
+- `frontend-svelte/src/App.svelte:228` — high_complexity: función 'handleConfirmBooking' con complejidad 24
+- `frontend-svelte/src/App.svelte:268` — long_function: función 'void' de 37 líneas
+- `frontend-svelte/src/App.svelte:268` — high_complexity: función 'void' con complejidad 17
+- `frontend-svelte/src/lib/api.js:156` — low_cohesion: clase 'ApiGatewayClient' con baja cohesión (17%)
+- `frontend-svelte/src/lib/api.js:156` — high_coupling: clase 'ApiGatewayClient' muy acoplada (CBO=30)
+- `frontend-svelte/src/lib/api.js:240` — long_method: método 'ApiGatewayClient.checkHealth' de 43 líneas
+- `frontend-svelte/src/lib/api.js:240` — high_complexity: método 'ApiGatewayClient.checkHealth' con complejidad 8
+- `frontend-svelte/src/lib/api.js:310` — long_method: método 'ApiGatewayClient.requestOnce' de 68 líneas
+- `frontend-svelte/src/lib/api.js:310` — high_complexity: método 'ApiGatewayClient.requestOnce' con complejidad 17
+- `frontend-svelte/src/lib/api.js:588` — long_method: método 'ApiGatewayClient.registerRequest' de 30 líneas
+- `frontend-svelte/src/lib/api.js:588` — high_complexity: método 'ApiGatewayClient.registerRequest' con complejidad 7
+- `frontend-svelte/src/lib/api.js:643` — long_method: método 'ApiGatewayClient.createBooking' de 32 líneas
+- `frontend-svelte/src/lib/api.js:643` — high_complexity: método 'ApiGatewayClient.createBooking' con complejidad 13
+- `frontend-svelte/src/lib/api.js:694` — high_complexity: método 'ApiGatewayClient.cancelBooking' con complejidad 10
+- `frontend-svelte/src/lib/api.js:96` — high_complexity: función 'extractErrorMessage' con complejidad 12
+- `frontend-svelte/src/lib/storage.js:53` — high_complexity: función 'normalizeUser' con complejidad 6
+- `frontend-svelte/src/lib/storage.js:78` — high_complexity: función 'saveSession' con complejidad 6
+- `frontend-svelte/src/lib/stores.js:26` — long_function: función 'createAuthStore' de 62 líneas
+- `frontend-svelte/src/lib/stores.js:26` — high_complexity: función 'createAuthStore' con complejidad 7
+- `frontend-svelte/src/lib/stores.js:117` — long_function: función 'createSearchStore' de 47 líneas
+- `frontend-svelte/src/lib/stores.js:169` — long_function: función 'createSeatStore' de 31 líneas
+- `frontend-svelte/src/lib/stores.js:205` — long_function: función 'createBookingsStore' de 51 líneas
+- `frontend-svelte/src/lib/normalizers.js:92` — high_complexity: función 'normalizeAuthResponse' con complejidad 18
+- `frontend-svelte/src/lib/normalizers.js:126` — high_complexity: función 'normalizeDestinations' con complejidad 28
+- `frontend-svelte/src/lib/normalizers.js:158` — long_function: función 'normalizeTrainSummary' de 42 líneas
+- `frontend-svelte/src/lib/normalizers.js:158` — high_complexity: función 'normalizeTrainSummary' con complejidad 83
+- … y 152 hallazgo(s) más.
 
-**Componente demasiado grande (BigC)** — 21 archivo(s):
-- `frontend-react/src/App.tsx`
-- `frontend-react/src/components/AdminRouteManagementView.tsx`
-- `frontend-react/src/components/ConnectivityHub.tsx`
-- `frontend-react/src/components/MyBookings.tsx`
-- `frontend-react/src/components/SeatMap.tsx`
-- `frontend-react/src/components/landing/HeroCarousel.tsx`
-- `frontend-react/src/components/landing/SiteFooter.tsx`
-- `frontend-react/src/components/landing/TrainResults.tsx`
-- `frontend-svelte/src/App.svelte`
-- `frontend-svelte/src/components/AuthModal.svelte`
-- `frontend-svelte/src/components/ConnectivityHub.svelte`
-- `frontend-svelte/src/components/MyBookingsView.svelte`
-- `frontend-svelte/src/components/ProjectManagementView.svelte`
-- `frontend-svelte/src/components/SeatSelectionCheckoutView.svelte`
-- `frontend-svelte/src/components/TicketConfirmationView.svelte`
-- `frontend-svelte/src/components/TrainSearchView.svelte`
-- `frontend-svelte/src/lib/components/AuthModal.svelte`
-- `frontend-svelte/src/lib/components/PaymentView.svelte`
-- `frontend-svelte/src/lib/components/SearchView.svelte`
-- `frontend-svelte/src/lib/components/SeatMap.svelte`
-- `frontend-svelte/src/lib/components/TicketView.svelte`
+**Duplicación (duplicacion)** — archivos con más líneas repetidas:
 
-**Baja cohesión (Coh)** — 4 archivo(s):
-- `frontend-react/src/lib/apiClient.ts`
-- `frontend-react/src/lib/mockAdapter.ts`
-- `frontend-svelte/src/lib/api.js`
-- `frontend-svelte/src/lib/mockAdapter.js`
+- `frontend-react/src/lib/apiClient.ts` — 291 línea(s) duplicada(s)
+- `frontend-svelte/src/lib/api.js` — 272 línea(s) duplicada(s)
+- `backend-fastapi/app/routers/bookings.py` — 232 línea(s) duplicada(s)
+- `frontend-svelte/src/data.ts` — 181 línea(s) duplicada(s)
+- `frontend-react/src/mockData.ts` — 181 línea(s) duplicada(s)
+- `frontend-react/src/lib/normalizers.ts` — 107 línea(s) duplicada(s)
+- `frontend-svelte/src/lib/normalizers.js` — 107 línea(s) duplicada(s)
+- `frontend-svelte/src/types.ts` — 82 línea(s) duplicada(s)
+- `frontend-react/src/types.ts` — 78 línea(s) duplicada(s)
+- `frontend-react/src/lib/mockAdapter.ts` — 61 línea(s) duplicada(s)
+- `frontend-svelte/src/lib/mockAdapter.js` — 54 línea(s) duplicada(s)
+- `backend-fastapi/app/utils/email_service.py` — 38 línea(s) duplicada(s)
+- `backend-express/src/controllers/trains.controller.ts` — 38 línea(s) duplicada(s)
+- `backend-fastapi/app/schemas/train.py` — 33 línea(s) duplicada(s)
+- `frontend-react/src/lib/storage.ts` — 32 línea(s) duplicada(s)
+
+**Acceso a datos dentro del componente (HTTP)** — 1 hallazgo(s) en 1 archivo(s):
+
+| Archivo | Línea(s) | Señal |
+|---|---|---|
+| `frontend-svelte/src/components/ProjectManagementView.svelte` | 1 | llamada HTTP (fetch/axios) dentro del componente (mover a una capa de servicios) |
+
+**Depuración olvidada (DBG)** — 6 hallazgo(s) en 5 archivo(s):
+
+| Archivo | Línea(s) | Señal |
+|---|---|---|
+| `backend-express/src/config/db.ts` | 18 | salida de depuración olvidada |
+| `backend-express/src/server.ts` | 30 | salida de depuración olvidada |
+| `frontend-react/src/components/ETicketModal.tsx` | 125 | salida de depuración olvidada |
+| `frontend-svelte/src/components/TicketConfirmationView.svelte` | 153 | salida de depuración olvidada |
+| `frontend-svelte/src/lib/components/SearchView.svelte` | 30, 48 | salida de depuración olvidada |
+
+**Componente demasiado grande (BigC)** — 21 hallazgo(s) en 21 archivo(s):
+
+| Archivo | Línea(s) | Señal |
+|---|---|---|
+| `frontend-react/src/App.tsx` | 1 | componente grande (472 líneas) |
+| `frontend-react/src/components/AdminRouteManagementView.tsx` | 1 | componente grande (662 líneas) |
+| `frontend-react/src/components/ConnectivityHub.tsx` | 1 | componente grande (203 líneas) |
+| `frontend-react/src/components/MyBookings.tsx` | 1 | componente grande (175 líneas) |
+| `frontend-react/src/components/SeatMap.tsx` | 1 | componente grande (202 líneas) |
+| `frontend-react/src/components/landing/HeroCarousel.tsx` | 1 | componente grande (292 líneas) |
+| `frontend-react/src/components/landing/SiteFooter.tsx` | 1 | componente grande (161 líneas) |
+| `frontend-react/src/components/landing/TrainResults.tsx` | 1 | componente grande (165 líneas) |
+| `frontend-svelte/src/App.svelte` | 1 | componente grande (648 líneas) |
+| `frontend-svelte/src/components/AuthModal.svelte` | 1 | componente grande (446 líneas) |
+| `frontend-svelte/src/components/ConnectivityHub.svelte` | 1 | componente grande (189 líneas) |
+| `frontend-svelte/src/components/MyBookingsView.svelte` | 1 | componente grande (237 líneas) |
+| `frontend-svelte/src/components/ProjectManagementView.svelte` | 1 | componente grande (399 líneas) |
+| `frontend-svelte/src/components/SeatSelectionCheckoutView.svelte` | 1 | componente grande (522 líneas) |
+| `frontend-svelte/src/components/TicketConfirmationView.svelte` | 1 | componente grande (434 líneas) |
+| `frontend-svelte/src/components/TrainSearchView.svelte` | 1 | componente grande (792 líneas) |
+| `frontend-svelte/src/lib/components/AuthModal.svelte` | 1 | componente grande (163 líneas) |
+| `frontend-svelte/src/lib/components/PaymentView.svelte` | 1 | componente grande (186 líneas) |
+| `frontend-svelte/src/lib/components/SearchView.svelte` | 1 | componente grande (204 líneas) |
+| `frontend-svelte/src/lib/components/SeatMap.svelte` | 1 | componente grande (181 líneas) |
+| … | … | y 1 archivo(s) más |
+
+**Baja cohesión (Coh)** — 4 hallazgo(s) en 4 archivo(s):
+
+| Archivo | Línea(s) | Señal |
+|---|---|---|
+| `frontend-react/src/lib/apiClient.ts` | 232 | clase 'ApiGatewayClient' con baja cohesión (10%) |
+| `frontend-react/src/lib/mockAdapter.ts` | 46 | clase 'MockAdapter' con baja cohesión (42%) |
+| `frontend-svelte/src/lib/api.js` | 156 | clase 'ApiGatewayClient' con baja cohesión (17%) |
+| `frontend-svelte/src/lib/mockAdapter.js` | 37 | clase 'MockAdapter' con baja cohesión (27%) |
+
+**Cobertura (Cob)** — unidades por debajo del umbral:
+
+_No hay detalle por archivo; el repo no es medible o no hay unidades por debajo del umbral._
 
 ---
-_Informe generado por la cátedra. Los umbrales corresponden al perfil `exigente`. Ante dudas, revisá el archivo señalado y el criterio en `CRITERIOS-CALIDAD.md`._
+_Informe generado por la cátedra. Los umbrales corresponden al perfil `exigente`. Ante dudas, revisá el archivo y la línea señalados y el criterio en `CRITERIOS-CALIDAD.md`._
 <!-- evaluacion:fin -->
