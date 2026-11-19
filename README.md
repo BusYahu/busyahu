@@ -92,6 +92,14 @@ code Bash
 
 docker compose down
 
+> **Importante: contraseña de MongoDB y volumen persistente**
+>
+> MongoDB solo crea el usuario root la **primera vez** que inicializa el volumen. Si posteriormente cambiás `MONGO_INITDB_ROOT_PASSWORD` en `.env`, el arranque normal falla con `SCRAM authentication failed, storedKey mismatch`, porque la contraseña del volumen y la de `.env` ya no coinciden.
+>
+> - Para un arranque habitual (`docker compose down` y `docker compose up -d`) no hace falta borrar el volumen: alcanza con mantener las credenciales de `.env` sin cambios.
+> - Si necesitás cambiar la contraseña de forma intencional, recreá el volumen una única vez con `docker compose down -v` (esto **borra los datos**) y volvé a levantar el stack.
+> - `./start.sh` verifica las credenciales antes de arrancar el resto del stack y muestra esta explicación si detecta el problema.
+
 🌐 Puertos y Puntos de Acceso
 
 Una vez levantado el entorno, los servicios estarán disponibles en:
