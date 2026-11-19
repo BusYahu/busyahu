@@ -100,6 +100,19 @@ docker compose down
 > - Si necesitás cambiar la contraseña de forma intencional, recreá el volumen una única vez con `docker compose down -v` (esto **borra los datos**) y volvé a levantar el stack.
 > - `./start.sh` verifica las credenciales antes de arrancar el resto del stack y muestra esta explicación si detecta el problema.
 
+## ✅ Verificación de Salud (Healthchecks)
+
+Todos los servicios incluyen `healthcheck` en `docker-compose.yml` y políticas de reinicio (`restart: always`). Para verificar que todo esté operativo:
+
+```bash
+docker compose ps
+```
+
+Todos los contenedores deben mostrar estado `healthy` (mongo, backends) o `running` (frontends). Los backends exponen `/api/health`:
+
+- Express: http://localhost:4000/api/health
+- FastAPI: http://localhost:8000/api/health (Swagger en /docs)
+
 🌐 Puertos y Puntos de Acceso
 
 Una vez levantado el entorno, los servicios estarán disponibles en:
