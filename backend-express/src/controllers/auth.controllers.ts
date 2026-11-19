@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
 import { getDB } from '../config/db';
+import { logger } from '../config/logger';
 import { IUser, toUserResponseDTO } from '../models/user.model';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
@@ -56,7 +57,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       user: toUserResponseDTO(newUser),
     });
   } catch (error) {
-    console.error('Error en register:', error);
+    logger.error('Error en register:', error);
     res.status(500).json({ error: 'Internal Server Error', message: 'Error interno al registrar usuario.' });
   }
 }
@@ -100,7 +101,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       user: toUserResponseDTO(user),
     });
   } catch (error) {
-    console.error('Error en login:', error);
+    logger.error('Error en login:', error);
     res.status(500).json({ error: 'Internal Server Error', message: 'Error interno al autenticar usuario.' });
   }
 }
@@ -122,7 +123,7 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
       user: toUserResponseDTO(user),
     });
   } catch (error) {
-    console.error('Error en getMe:', error);
+    logger.error('Error en getMe:', error);
     res.status(500).json({ error: 'Internal Server Error', message: 'Error al obtener datos del usuario.' });
   }
 }

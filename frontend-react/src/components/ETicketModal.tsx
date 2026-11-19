@@ -122,7 +122,7 @@ export function ETicketModal({ booking, onClose }: ETicketModalProps) {
         </button>
         <button
           type="button"
-          onClick={() => window.print()}
+          onClick={() => (window as unknown as { print?: () => void }).print?.()}
           className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold transition-all shadow-md shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer"
         >
           <Printer className="w-4 h-4" /> Imprimir Billete

@@ -1,12 +1,9 @@
 """
 Servicio de correo electrónico para BusYahu (FastAPI).
 
-Encapsula el envío de correos (código de verificación de registro) vía SMTP,
-usando la configuración definida en `app.config.settings` (variables de entorno
-SMTP_*). Se inspira en el flujo validado por `test_smtp.py`.
-
-Las funciones son sincrónicas porque el router de autenticación las invoca de
-forma sincrónica (ver `app.routers.auth`).
+Encapsula el envío de correos (código de verificación de registro y billetes)
+vía SMTP, usando la configuración definida en `app.config.settings` (variables
+de entorno SMTP_*).
 """
 import logging
 import os
@@ -126,6 +123,42 @@ def _build_email_html(code: str, first_name: str) -> str:
     """
 
 
+def _send_message(msg, failure_prefix: str, success_message: str, recipient: str) -> dict:
+    """Conecta al SMTP, autentica, envía el mensaje y normaliza el resultado."""
+    smtp_port = settings.SMTP_PORT
+    server = None
+    try:
+        if smtp_port == 465:
+            server = smtplib.SMTP_SSL(settings.SMTP_HOST, smtp_port, timeout=10)
+        else:
+            server = smtplib.SMTP(settings.SMTP_HOST, smtp_port, timeout=10)
+            if settings.SMTP_USE_TLS:
+                server.starttls()
+
+        server.login(_smtp_user(), _clean_password(_smtp_password()))
+        server.send_message(msg)
+        logger.info("%s enviado exitosamente a %s", success_message, recipient)
+        return {"success": True, "configured": True, "message": f"{success_message} enviado exitosamente."}
+    except smtplib.SMTPAuthenticationError as auth_err:
+        err = f"Error de autenticación SMTP: {auth_err}"
+        logger.error(err)
+        return {"success": False, "configured": True, "error": err, "message": err}
+    except (socket.timeout, TimeoutError) as to_err:
+        err = f"Timeout conectando al servidor SMTP: {to_err}"
+        logger.error(err)
+        return {"success": False, "configured": True, "error": err, "message": err}
+    except Exception as e:
+        err = f"{failure_prefix}: {e}"
+        logger.exception(err)
+        return {"success": False, "configured": True, "error": err, "message": err}
+    finally:
+        if server is not None:
+            try:
+                server.quit()
+            except Exception:
+                pass
+
+
 def send_verification_email(recipient: str, code: str, first_name: str = "Viajero") -> dict:
     """
     Envía el correo con el código de verificación de 6 dígitos.
@@ -156,16 +189,10 @@ def send_verification_email(recipient: str, code: str, first_name: str = "Viajer
             "code": code,
         }
 
-    smtp_host = settings.SMTP_HOST
-    smtp_port = settings.SMTP_PORT
-    smtp_user = _smtp_user()
-    smtp_password = _clean_password(_smtp_password())
     smtp_from_name = settings.SMTP_FROM_NAME or "BusYahu Rail"
-    use_tls = settings.SMTP_USE_TLS
-
     from_email = settings.SMTP_FROM_EMAIL.strip() if getattr(settings, "SMTP_FROM_EMAIL", "") else ""
     if not from_email:
-        from_email = smtp_user
+        from_email = _smtp_user()
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = f"🔐 Tu código de verificación BusYahu: {code}"
@@ -184,41 +211,7 @@ def send_verification_email(recipient: str, code: str, first_name: str = "Viajer
     msg.attach(text_part)
     msg.attach(html_part)
 
-    server = None
-    try:
-        if smtp_port == 465:
-            server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10)
-        else:
-            server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
-            if use_tls:
-                server.starttls()
-
-        server.login(smtp_user, smtp_password)
-        server.send_message(msg)
-        logger.info("Correo de verificación enviado exitosamente a %s", recipient)
-        return {
-            "success": True,
-            "configured": True,
-            "message": "Correo enviado exitosamente.",
-        }
-    except smtplib.SMTPAuthenticationError as auth_err:
-        err = f"Error de autenticación SMTP: {auth_err}"
-        logger.error(err)
-        return {"success": False, "configured": True, "error": err, "message": err}
-    except (socket.timeout, TimeoutError) as to_err:
-        err = f"Timeout conectando al servidor SMTP: {to_err}"
-        logger.error(err)
-        return {"success": False, "configured": True, "error": err, "message": err}
-    except Exception as e:
-        err = f"Error al enviar correo: {e}"
-        logger.exception(err)
-        return {"success": False, "configured": True, "error": err, "message": err}
-    finally:
-        if server is not None:
-            try:
-                server.quit()
-            except Exception:
-                pass
+    return _send_message(msg, "Error al enviar correo", "Correo de verificación", recipient)
 
 
 def send_ticket_email(
@@ -245,14 +238,8 @@ def send_ticket_email(
             "message": "SMTP no configurado. Billete listo para descarga local.",
         }
 
-    smtp_host = settings.SMTP_HOST
-    smtp_port = settings.SMTP_PORT
-    smtp_user = _smtp_user()
-    smtp_password = _clean_password(_smtp_password())
     smtp_from_name = settings.SMTP_FROM_NAME or "BusYahu Rail"
-    use_tls = settings.SMTP_USE_TLS
-
-    from_email = (settings.SMTP_FROM_EMAIL or "").strip() or smtp_user
+    from_email = (settings.SMTP_FROM_EMAIL or "").strip() or _smtp_user()
 
     msg = MIMEMultipart("mixed")
     msg["Subject"] = subject or "Tu billete BusYahu"
@@ -264,13 +251,7 @@ def send_ticket_email(
     alt.attach(MIMEText(html_body or "", "html", "utf-8"))
     msg.attach(alt)
 
-    if pdf_bytes:
-        part = MIMEBase("application", "pdf")
-        part.set_payload(pdf_bytes)
-        encoders.encode_base64(part)
-        part.add_header("Content-Disposition", "attachment", filename=pdf_filename)
-        msg.attach(part)
-
+    _attach_binary(msg, pdf_bytes, "application", "pdf", pdf_filename, "attachment")
     if qr_png_bytes:
         qr_part = MIMEBase("image", "png")
         qr_part.set_payload(qr_png_bytes)
@@ -278,33 +259,16 @@ def send_ticket_email(
         qr_part.add_header("Content-ID", "<qrimage>")
         qr_part.add_header("Content-Disposition", "inline", filename="qr_acceso.png")
         msg.attach(qr_part)
+    _attach_binary(msg, wallet_bytes, "application", "octet-stream", wallet_filename, "attachment")
 
-    if wallet_bytes:
-        w_part = MIMEBase("application", "octet-stream")
-        w_part.set_payload(wallet_bytes)
-        encoders.encode_base64(w_part)
-        w_part.add_header("Content-Disposition", "attachment", filename=wallet_filename)
-        msg.attach(w_part)
+    return _send_message(msg, "Error al enviar billete", "Billete", recipient)
 
-    server = None
-    try:
-        if smtp_port == 465:
-            server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10)
-        else:
-            server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
-            if use_tls:
-                server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.send_message(msg)
-        logger.info("Billete enviado exitosamente a %s", recipient)
-        return {"success": True, "configured": True, "message": "Billete enviado exitosamente."}
-    except Exception as e:
-        err = f"Error al enviar billete: {e}"
-        logger.exception(err)
-        return {"success": False, "configured": True, "error": err, "message": err}
-    finally:
-        if server is not None:
-            try:
-                server.quit()
-            except Exception:
-                pass
+
+def _attach_binary(msg, payload, maintype, subtype, filename, disposition) -> None:
+    if not payload:
+        return
+    part = MIMEBase(maintype, subtype)
+    part.set_payload(payload)
+    encoders.encode_base64(part)
+    part.add_header("Content-Disposition", disposition, filename=filename)
+    msg.attach(part)

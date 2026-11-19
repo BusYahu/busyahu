@@ -1,18 +1,9 @@
 <script lang="ts">
-  import {
-    Activity,
-    AlertTriangle,
-    ArrowRightLeft,
-    CheckCircle2,
-    Database,
-    ExternalLink,
-    Layers,
-    RefreshCw,
-    Server,
-    Wifi,
-    WifiOff
-  } from 'lucide-svelte';
-  import { BACKENDS, CONTRACT_ENDPOINTS, FRONTENDS } from '../lib/api.js';
+  import { Activity, Database, ExternalLink, Layers, RefreshCw } from 'lucide-svelte';
+  import { BACKENDS, FRONTENDS } from '../lib/api.js';
+  import BackendStatusButton from './connectivity/BackendStatusButton.svelte';
+  import ContractsPanel from './connectivity/ContractsPanel.svelte';
+  import FallbackBanner from './connectivity/FallbackBanner.svelte';
 
   type BackendId = 'express' | 'fastapi';
 
@@ -41,10 +32,10 @@
   const backends: BackendId[] = ['express', 'fastapi'];
   const alternate = $derived<BackendId>(activeBackend === 'express' ? 'fastapi' : 'express');
 
-  let sourceLabel = $derived(
+  const sourceLabel = $derived(
     lastResult?.source === 'network' ? 'API' : lastResult?.source === 'fallback' ? 'FALLBACK' : 'MOCK'
   );
-  let sourceClass = $derived(
+  const sourceClass = $derived(
     lastResult?.source === 'network'
       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
       : lastResult?.source === 'fallback'
@@ -65,43 +56,12 @@
       </span>
 
       {#each backends as backend (backend)}
-        {@const status = health?.[backend]}
-        {@const isActive = activeBackend === backend}
-        <button
-          type="button"
-          onclick={() => onSwitchBackend(backend)}
-          title={`Conmutar en caliente hacia ${BACKENDS[backend].label}`}
-          class="group flex items-center gap-2 px-2.5 py-1.5 rounded-lg border font-semibold transition-all {isActive
-            ? backend === 'express'
-              ? 'bg-emerald-500/15 border-emerald-500/60 text-white shadow-sm'
-              : 'bg-sky-500/15 border-sky-500/60 text-white shadow-sm'
-            : 'bg-slate-950/60 border-slate-700 text-slate-300 hover:border-slate-500'}"
-        >
-          <Server
-            class="w-3.5 h-3.5 {isActive
-              ? backend === 'express'
-                ? 'text-emerald-400'
-                : 'text-sky-400'
-              : 'text-slate-500'}"
-          />
-          <span>{BACKENDS[backend].shortLabel} :{BACKENDS[backend].port}</span>
-          <span
-            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[9px] font-black {status?.online
-              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-              : 'bg-rose-500/20 text-rose-300 border-rose-500/40'}"
-          >
-            {#if status?.online}
-              <Wifi class="w-2.5 h-2.5" />
-              ONLINE
-            {:else}
-              <WifiOff class="w-2.5 h-2.5" />
-              OFFLINE
-            {/if}
-          </span>
-          {#if status?.online}
-            <span class="font-mono text-[9px] text-slate-500">{status.latencyMs}ms</span>
-          {/if}
-        </button>
+        <BackendStatusButton
+          {backend}
+          {activeBackend}
+          status={health?.[backend]}
+          {onSwitchBackend}
+        />
       {/each}
 
       <span class="px-2 py-0.5 rounded-full border text-[9px] font-black {sourceClass}">
@@ -158,41 +118,11 @@
   </div>
 
   {#if showContracts}
-    <div class="max-w-7xl mx-auto px-4 pb-3">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-        {#each CONTRACT_ENDPOINTS as contract (contract.method + contract.path)}
-          <div class="flex items-center gap-2 bg-slate-950/70 border border-slate-800 rounded-lg px-2.5 py-2">
-            <span class="font-mono text-[9px] font-black text-indigo-300 bg-indigo-500/10 border border-indigo-500/30 px-1.5 py-0.5 rounded">
-              {contract.method}
-            </span>
-            <div class="min-w-0">
-              <div class="font-mono text-[10px] text-slate-200 truncate">{contract.path}</div>
-              <div class="text-[9px] text-slate-500 truncate">{contract.label}</div>
-            </div>
-            <CheckCircle2 class="w-3.5 h-3.5 text-emerald-400 ml-auto shrink-0" />
-          </div>
-        {/each}
-      </div>
-    </div>
+    <ContractsPanel />
   {/if}
 
   {#if lastResult?.error}
-    <div class="max-w-7xl mx-auto px-4 pb-2">
-      <div class="flex flex-wrap items-center gap-2 bg-amber-500/10 border border-amber-500/40 text-amber-200 rounded-lg px-3 py-2 text-[11px]">
-        <AlertTriangle class="w-3.5 h-3.5 shrink-0" />
-        <span class="flex-1 min-w-[220px]">
-          {lastResult.error} Se muestran datos locales para no romper la interfaz.
-        </span>
-        <button
-          type="button"
-          onclick={onRetryAlternate}
-          class="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-400 text-slate-950 font-bold hover:bg-amber-300"
-        >
-          <ArrowRightLeft class="w-3 h-3" />
-          Reintentar en {BACKENDS[alternate].shortLabel}
-        </button>
-      </div>
-    </div>
+    <FallbackBanner error={lastResult.error} {alternate} {onRetryAlternate} />
   {/if}
 
   <div class="hidden xl:flex max-w-7xl mx-auto px-4 pb-1.5 items-center gap-3 text-[9px] text-slate-500">

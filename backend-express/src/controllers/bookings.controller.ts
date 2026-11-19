@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { ObjectId } from 'mongodb';
 import QRCode from 'qrcode';
 import { getDB } from '../config/db';
+import { logger } from '../config/logger';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { ITrain } from '../models/train.model';
 import {
@@ -198,7 +199,7 @@ export async function createBooking(req: AuthRequest, res: Response): Promise<vo
     const stored = { ...booking, _id: result.insertedId };
     res.status(201).json(bookingToResponse(stored));
   } catch (error) {
-    console.error('Error al crear reserva:', error);
+    logger.error('Error al crear reserva:', error);
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Error al crear la reserva.',
@@ -219,7 +220,7 @@ export async function getMyBookings(req: AuthRequest, res: Response): Promise<vo
 
     res.status(200).json(bookings.map((booking) => bookingToResponse(booking)));
   } catch (error) {
-    console.error('Error al listar reservas:', error);
+    logger.error('Error al listar reservas:', error);
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Error al consultar las reservas.',
@@ -249,7 +250,7 @@ export async function getBookingById(req: AuthRequest, res: Response): Promise<v
     }
     res.status(200).json(bookingToResponse(booking));
   } catch (error) {
-    console.error('Error al obtener reserva:', error);
+    logger.error('Error al obtener reserva:', error);
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Error al consultar la reserva.',
@@ -300,7 +301,7 @@ export async function cancelBooking(req: AuthRequest, res: Response): Promise<vo
       status: 'cancelled',
     });
   } catch (error) {
-    console.error('Error al cancelar reserva:', error);
+    logger.error('Error al cancelar reserva:', error);
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Error al cancelar la reserva.',
@@ -324,7 +325,7 @@ export async function generateBookingQr(req: AuthRequest, res: Response): Promis
     const qrCode = await QRCode.toDataURL(data);
     res.status(200).json({ success: true, qrCode });
   } catch (error) {
-    console.error('Error al generar QR:', error);
+    logger.error('Error al generar QR:', error);
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Error al generar el código QR.',
