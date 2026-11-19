@@ -1,0 +1,19 @@
+{
+  "path": [
+    "backend-fastapi/app",
+    "backend-express/src",
+    "frontend-react/src",
+    "frontend-svelte/src"
+  ],
+  "minTokens": 50,
+  "threshold": 15,
+  "reporters": ["console"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/.venv/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/.git/**",
+    "**/.jscpd-report/**"
+  ]
+}
