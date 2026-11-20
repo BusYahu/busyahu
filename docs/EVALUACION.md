@@ -258,25 +258,98 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 ## 7. Anexo: archivos donde se originan los problemas
 
-Se listan los archivos y líneas que el análisis marca para cada criterio en rojo. Para **duplicación** se muestran los archivos con más líneas repetidas; para **cobertura**, las unidades por debajo del umbral.
+Se listan **todos** los archivos y líneas que el análisis marca para cada criterio en rojo. Para **duplicación** se muestran los archivos con líneas repetidas; para **cobertura**, las unidades por debajo del umbral.
 
-**Duplicación (duplicacion)** — archivos con más líneas repetidas:
+**Resumen por archivo** — archivos con más hallazgos:
 
-- `frontend-svelte/src/data.ts` — 181 línea(s) duplicada(s)
-- `frontend-react/src/mockData.ts` — 181 línea(s) duplicada(s)
-- `frontend-react/src/lib/normalizers.ts` — 107 línea(s) duplicada(s)
-- `frontend-svelte/src/lib/normalizers.js` — 107 línea(s) duplicada(s)
-- `frontend-svelte/src/lib/api/transport.js` — 95 línea(s) duplicada(s)
-- `frontend-react/src/lib/api/transport.ts` — 95 línea(s) duplicada(s)
-- `frontend-svelte/src/types.ts` — 82 línea(s) duplicada(s)
-- `frontend-react/src/types.ts` — 78 línea(s) duplicada(s)
-- `frontend-react/src/lib/api/auth.ts` — 76 línea(s) duplicada(s)
-- `frontend-svelte/src/lib/api/core.js` — 53 línea(s) duplicada(s)
-- `frontend-svelte/src/lib/api.js` — 53 línea(s) duplicada(s)
-- `frontend-react/src/lib/api/core.ts` — 53 línea(s) duplicada(s)
-- `frontend-react/src/lib/apiClient.ts` — 53 línea(s) duplicada(s)
-- `frontend-svelte/src/lib/api/health.js` — 42 línea(s) duplicada(s)
-- `backend-fastapi/app/routers/bookings.py` — 42 línea(s) duplicada(s)
+| Archivo | Hallazgos | Peso total | Señales |
+|---|---:|---:|---|
+| `backend-fastapi/app/routers/bookings.py` | 15 | 66 | high_complexity, long_function, long_params |
+| `backend-fastapi/app/utils/email_service.py` | 10 | 43 | high_complexity, long_function, long_params |
+| `frontend-svelte/src/lib/normalizers.js` | 10 | 47 | high_complexity, long_function |
+| `backend-fastapi/app/schemas/train.py` | 8 | 64 | high_coupling |
+| `backend-express/src/controllers/bookings.controller.ts` | 7 | 33 | high_complexity, long_function |
+| `backend-express/src/controllers/trains.controller.ts` | 7 | 31 | high_complexity, long_function |
+| `backend-fastapi/app/routers/auth.py` | 6 | 26 | high_complexity, long_function |
+| `frontend-react/src/lib/normalizers.ts` | 6 | 29 | high_complexity, long_function |
+| `frontend-svelte/src/lib/api/bookings.js` | 5 | 23 | high_complexity, long_function |
+| `frontend-svelte/src/lib/stores.js` | 5 | 21 | high_complexity, long_function |
+| `backend-fastapi/app/routers/trains.py` | 4 | 18 | high_complexity, long_function |
+| `backend-fastapi/app/schemas/user.py` | 4 | 32 | high_coupling |
+| `frontend-react/src/lib/api/health.ts` | 4 | 18 | high_complexity, long_function |
+| `frontend-svelte/src/lib/api/auth.js` | 4 | 18 | high_complexity, long_function |
+| `frontend-svelte/src/lib/api/health.js` | 4 | 18 | high_complexity, long_function |
+| `backend-fastapi/app/auth.py` | 3 | 14 | high_complexity, long_function |
+| `backend-fastapi/app/schemas/booking.py` | 3 | 24 | high_coupling |
+| `backend-fastapi/app/utils/wallet_service.py` | 3 | 14 | high_complexity, long_function |
+| `frontend-react/src/hooks/useTravelCatalog.ts` | 3 | 14 | high_complexity, long_function |
+| `frontend-react/src/lib/mock/catalogMock.ts` | 3 | 14 | high_complexity, long_function |
+| `frontend-svelte/src/lib/bookingSession.svelte.ts` | 3 | 14 | high_complexity, long_function |
+| `frontend-svelte/src/lib/mock/catalogMock.js` | 3 | 14 | high_complexity, long_function |
+| `backend-express/src/controllers/auth.controllers.ts` | 2 | 8 | long_function |
+| `backend-fastapi/app/schemas/destination.py` | 2 | 16 | high_coupling |
+| `backend-fastapi/app/utils/ticket_pdf.py` | 2 | 9 | high_complexity, long_function |
+| … | … | … | y 29 archivo(s) más |
+
+**Duplicación (duplicacion)** — archivos con líneas repetidas:
+
+| Archivo | Líneas duplicadas |
+|---|---:|
+| `frontend-react/src/mockData.ts` | 181 |
+| `frontend-svelte/src/data.ts` | 181 |
+| `frontend-react/src/lib/normalizers.ts` | 107 |
+| `frontend-svelte/src/lib/normalizers.js` | 107 |
+| `frontend-react/src/lib/api/transport.ts` | 95 |
+| `frontend-svelte/src/lib/api/transport.js` | 95 |
+| `frontend-svelte/src/types.ts` | 82 |
+| `frontend-react/src/types.ts` | 78 |
+| `frontend-react/src/lib/api/auth.ts` | 76 |
+| `frontend-react/src/lib/api/core.ts` | 53 |
+| `frontend-react/src/lib/apiClient.ts` | 53 |
+| `frontend-svelte/src/lib/api.js` | 53 |
+| `frontend-svelte/src/lib/api/core.js` | 53 |
+| `backend-fastapi/app/routers/bookings.py` | 42 |
+| `frontend-react/src/lib/api/health.ts` | 42 |
+| `frontend-svelte/src/lib/api/health.js` | 42 |
+| `frontend-react/src/lib/mock/bookingsMock.ts` | 39 |
+| `backend-express/src/controllers/trains.controller.ts` | 38 |
+| `frontend-react/src/components/app/LandingView.tsx` | 38 |
+| `frontend-react/src/components/landing/HeroCarousel.tsx` | 38 |
+| `frontend-svelte/src/lib/api/auth.js` | 38 |
+| `frontend-react/src/lib/mock/catalogMock.ts` | 35 |
+| `frontend-svelte/src/lib/mock/catalogMock.js` | 35 |
+| `backend-fastapi/app/schemas/train.py` | 33 |
+| `frontend-react/src/lib/api/bookings.ts` | 33 |
+| `frontend-react/src/lib/storage.ts` | 32 |
+| `frontend-svelte/src/lib/storage.js` | 32 |
+| `frontend-react/src/components/landing/HeroSearchCard.tsx` | 30 |
+| `frontend-svelte/src/lib/mock/bookingsMock.js` | 27 |
+| `frontend-svelte/src/lib/stores.js` | 20 |
+| `frontend-react/src/lib/mockAdapter.ts` | 19 |
+| `frontend-svelte/src/lib/api/bookings.js` | 19 |
+| `frontend-react/src/components/AdminRouteManagementView.tsx` | 16 |
+| `frontend-react/src/components/app/AdminView.tsx` | 16 |
+| `frontend-react/src/lib/api/catalog.ts` | 16 |
+| `frontend-svelte/src/lib/api/catalog.js` | 16 |
+| `frontend-svelte/src/components/app/AppHeader.svelte` | 15 |
+| `frontend-svelte/src/components/app/AppTopBar.svelte` | 15 |
+| `backend-express/src/models/booking.model.ts` | 14 |
+| `frontend-svelte/src/lib/mockAdapter.js` | 14 |
+| `frontend-react/src/components/landing/HeroSearchFields.tsx` | 12 |
+| `frontend-react/src/components/seats/SeatGrid.tsx` | 12 |
+| `frontend-react/src/hooks/useBookingManager.ts` | 12 |
+| `frontend-svelte/src/lib/bookingFlow.ts` | 12 |
+| `backend-fastapi/app/routers/trains.py` | 10 |
+| `frontend-svelte/src/lib/authController.svelte.ts` | 10 |
+| `frontend-svelte/src/components/app/HeaderNav.svelte` | 7 |
+| `backend-express/src/models/train.model.ts` | 6 |
+| `frontend-react/src/components/ConnectivityHub.tsx` | 6 |
+| `frontend-svelte/src/components/ConnectivityHub.svelte` | 6 |
+| `frontend-svelte/src/components/search/SearchWidget.svelte` | 6 |
+| `frontend-svelte/src/lib/searchFilters.ts` | 6 |
+| `frontend-svelte/src/components/auth/RegisterForm.svelte` | 5 |
+| `frontend-svelte/src/lib/authActions.ts` | 5 |
+| `frontend-svelte/src/lib/trainSearchState.svelte.ts` | 5 |
 
 ---
 _Informe generado por la cátedra. Los umbrales corresponden al perfil `exigente`. Ante dudas, revisá el archivo y la línea señalados y el criterio en `CRITERIOS-CALIDAD.md`._
