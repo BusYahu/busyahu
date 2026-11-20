@@ -49,7 +49,7 @@ services:
       mongo:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/health >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/api/health >/dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -86,7 +86,7 @@ services:
       mongo:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -102,18 +102,18 @@ services:
     container_name: railworld_frontend_react
     restart: always
     ports:
-      - "${PORT_REACT:-5173}:80"
+      - "${PORT_REACT:-5173}:5173"
     depends_on:
       backend-express:
         condition: service_healthy
       backend-fastapi:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:80 >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5173 >/dev/null 2>&1 || exit 1"]
       interval: 20s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 10
+      start_period: 30s
 
   # -------------------------------------------------------------
   # 5. Frontend 2: Svelte 5 + Vite + Tailwind
@@ -132,7 +132,7 @@ services:
       backend-fastapi:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:80 >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80 >/dev/null 2>&1 || exit 1"]
       interval: 20s
       timeout: 5s
       retries: 5
