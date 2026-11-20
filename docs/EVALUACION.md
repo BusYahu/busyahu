@@ -3,7 +3,7 @@
 
 > Documento **generado automáticamente** por la cátedra de Programación III (RepoSense + análisis de calidad + constancia). **No editar a mano**: se regenera en cada evaluación.
 > Rama evaluada: `main`. Análisis **heurístico** (regex + métricas): es una criba para orientar la revisión, **no una nota**.
-> Generado: 2026-11-19.
+> Generado: 2026-11-20.
 
 ## 1. Veredicto
 
@@ -30,7 +30,7 @@
 | Autor | Commits | Código (LOC) | Tests (LOC) | Docs (LOC) | Días activos | % del código |
 |---|---:|---:|---:|---:|---:|---:|
 | Lauti Gómez | 18 | 11,897 | 3,553 | 380 | 12 | 76% |
-| Valentino Dilello | 17 | 3,678 | 0 | 23,662 | 21 | 24% |
+| Valentino Dilello | 19 | 3,678 | 0 | 23,675 | 22 | 24% |
 
 > _El LOC de autoría lo calcula RepoSense sobre el historial y puede diferir del LOC de código del análisis de calidad (que mira solo el estado de `main`)._
 
@@ -42,8 +42,8 @@
 
 | Alumno | Sesiones | Cumplimiento | Pausa | Recencia | IC | Nivel | Para subir de nivel |
 |---|--:|--:|--:|--:|--:|--|--|
-| Lauti Gómez | 11 | 39% | 35 d | 93% | **39** | No aprueba | Cumplimiento 39% (mín. 50%) |
-| Valentino Dilello | 15 | 54% | 21 d | 64% | **44** | Aprueba | Cumplimiento 54% (mín. 100%); Pausa 21 d (máx. 5 d); Recencia 64% (mín. 75%) |
+| Lauti Gómez | 11 | 39% | 35 d | 86% | **37** | No aprueba | Cumplimiento 39% (mín. 50%) |
+| Valentino Dilello | 16 | 57% | 21 d | 93% | **50** | Aprueba | Cumplimiento 57% (mín. 100%); Pausa 21 d (máx. 5 d) |
 
 > Para aprobar el IC: **2 sesiones por semana** sostenidas, sin pausas mayores a **10 días** y con actividad en las **últimas 2 semanas**. Se excluyen merges, bots y al docente. Zona horaria UTC-3.
 
@@ -161,11 +161,11 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 ## 6. Actividad en clase y fuera de clase
 
-> Se consideran las **28 clases** del período (miércoles y viernes, según `config/constancia.json`; feriados y semanas sin clase descontados). Para cada alumno se muestra la actividad **en cada clase** y también la actividad **fuera de los días de clase** (fines de semana u otros días). `Commits` = commits de trabajo (no-merge); `Merges` = merges de PR (también son push). Los días sin actividad dicen **sin actividad**.
+> Se consideran las **29 clases** del período (miércoles y viernes, según `config/constancia.json`; feriados y semanas sin clase descontados). Para cada alumno se muestra la actividad **en cada clase** y también la actividad **fuera de los días de clase** (fines de semana u otros días). `Commits` = commits de trabajo (no-merge); `Merges` = merges de PR (también son push). Los días sin actividad dicen **sin actividad**.
 
 ### Lauti Gómez
 
-**9/28 clases con actividad** · total del período: 16 commits · 1 merges
+**9/29 clases con actividad** · total del período: 16 commits · 1 merges
 
 | Fecha | Actividad | Repositorios | Commits / merges |
 |---|:--:|---|--:|
@@ -197,6 +197,7 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 | 2026-11-11 | No | sin actividad | 0 / 0 |
 | 2026-11-13 | No | sin actividad | 0 / 0 |
 | 2026-11-18 | **Sí** | busyahu | 3 / 0 |
+| 2026-11-20 | No | sin actividad | 0 / 0 |
 
 **Fuera de clase:** 3 fecha(s) con actividad · 4 commits · 2 merges
 
@@ -208,7 +209,7 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 
 ### Valentino Dilello
 
-**14/28 clases con actividad** · total del período: 13 commits · 8 merges
+**14/29 clases con actividad** · total del período: 13 commits · 8 merges
 
 | Fecha | Actividad | Repositorios | Commits / merges |
 |---|:--:|---|--:|
@@ -240,8 +241,9 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 | 2026-11-11 | **Sí** | busyahu | 1 / 0 |
 | 2026-11-13 | No | sin actividad | 0 / 0 |
 | 2026-11-18 | No | sin actividad | 0 / 0 |
+| 2026-11-20 | No | sin actividad | 0 / 0 |
 
-**Fuera de clase:** 7 fecha(s) con actividad · 5 commits · 4 merges
+**Fuera de clase:** 8 fecha(s) con actividad · 7 commits · 4 merges
 
 | Fecha | Repositorios | Commits / merges |
 |---|---|--:|
@@ -252,6 +254,7 @@ Cada aspecto indica **qué mide**, **por qué importa** y **tu resultado**. Cuan
 | 2026-11-03 | busyahu | 1 / 1 |
 | 2026-11-14 | busyahu | 1 / 0 |
 | 2026-11-17 | busyahu | 0 / 1 |
+| 2026-11-19 | busyahu | 2 / 0 |
 
 ## 7. Anexo: archivos donde se originan los problemas
 
@@ -263,17 +266,17 @@ Se listan los archivos y líneas que el análisis marca para cada criterio en ro
 - `frontend-react/src/mockData.ts` — 181 línea(s) duplicada(s)
 - `frontend-react/src/lib/normalizers.ts` — 107 línea(s) duplicada(s)
 - `frontend-svelte/src/lib/normalizers.js` — 107 línea(s) duplicada(s)
-- `frontend-react/src/lib/api/transport.ts` — 95 línea(s) duplicada(s)
 - `frontend-svelte/src/lib/api/transport.js` — 95 línea(s) duplicada(s)
+- `frontend-react/src/lib/api/transport.ts` — 95 línea(s) duplicada(s)
 - `frontend-svelte/src/types.ts` — 82 línea(s) duplicada(s)
 - `frontend-react/src/types.ts` — 78 línea(s) duplicada(s)
 - `frontend-react/src/lib/api/auth.ts` — 76 línea(s) duplicada(s)
 - `frontend-svelte/src/lib/api/core.js` — 53 línea(s) duplicada(s)
 - `frontend-svelte/src/lib/api.js` — 53 línea(s) duplicada(s)
-- `frontend-react/src/lib/apiClient.ts` — 53 línea(s) duplicada(s)
 - `frontend-react/src/lib/api/core.ts` — 53 línea(s) duplicada(s)
-- `backend-fastapi/app/routers/bookings.py` — 42 línea(s) duplicada(s)
+- `frontend-react/src/lib/apiClient.ts` — 53 línea(s) duplicada(s)
 - `frontend-svelte/src/lib/api/health.js` — 42 línea(s) duplicada(s)
+- `backend-fastapi/app/routers/bookings.py` — 42 línea(s) duplicada(s)
 
 ---
 _Informe generado por la cátedra. Los umbrales corresponden al perfil `exigente`. Ante dudas, revisá el archivo y la línea señalados y el criterio en `CRITERIOS-CALIDAD.md`._
